@@ -1,33 +1,56 @@
 # -*- coding: utf-8 -*-
 from PySide2 import QtCore, QtWidgets, QtGui
 from elFrosher.my_modules.asset_creator import AssetCreator
+
+import elFrosher.my_modules.DataBaseWorker as DB_Worker
+try:
+    reload(DB_Worker)
+except NameError:
+    import importlib
+    importlib.reload(DB_Worker)
 from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
+
+import elFrosher.my_modules.synchro as synchro
+try:
+    reload(synchro)
+except NameError:
+    import importlib
+    importlib.reload(synchro)
 from elFrosher.my_modules.synchro import Synchronizer
+
+import elFrosher.models.models as models
+try:
+    reload(models)
+except NameError:
+    import importlib
+    importlib.reload(models)
 from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
 
-from elFrosher.my_modules import config
+from elFrosher.my_modules import config_frosher
+
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
-from os.path import dirname, join, normpath
+from os.path import dirname, join, normpath, normcase
 import sys
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
-    __DATABASE = normpath(join(__initial_folder, 'db', 'tmp_work.db'))
+    # __DATABASE = normpath(join(config_frosher.SERVER, 'db', 'el_frosher.db'))
+    __DATABASE = config_frosher.DB_FILE
     asset_form, submit_form = '', ''
     directory, server = '', ''
 
-    project_root = normpath(config.PROJECT)
-    server_root = normpath(config.SERVER)
-    versions = normpath(config.VERSIONS)
+    project_root = normpath(config_frosher.PROJECT)
+    server_root = normpath(config_frosher.SERVER)
+    versions = normpath(config_frosher.VERSIONS)
 
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
         self.synchro = Synchronizer()
         self.db = DatabaseWorker(self.__DATABASE)
-        self.db.project_root = config.PROJECT
+        self.db.project_root = config_frosher.PROJECT
         self.fileslist = []
         self.current_sender = None
         self.ui = myFuckingWindow()
@@ -51,7 +74,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             self.bookmarks = QtGui.QStringListModel()
 
         bookmarks = []
-        for i in config.BOOKMARKS_DEFAULT:
+        for i in config_frosher.BOOKMARKS_DEFAULT:
             bookmarks.append(i)
         self.bookmarks.setStringList(bookmarks)
         self.ui.bookmarks.setModel(self.bookmarks)
@@ -80,7 +103,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.create_asset.setText('')
         self.ui.create_asset.setIcon(self.ico_folder)
         self.ui.create_asset.setIconSize(QtCore.QSize(32, 32))
-        self.ui.user_name.setText(config.user)
+        self.ui.user_name.setText(config_frosher.user)
 
     def setup_all_ui(self):
         # ---- DIALOGS ----- #
@@ -149,7 +172,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.details_table.clicked.connect(self.test)
 
     def updater_tree_model(self, model, model_root):
-        dicty = self.db.get_dict(config.user)
+        dicty = self.db.get_dict(config_frosher.user)
         model.update(dicty, model_root)
 
     def update_tree_views(self, view, model, model_root):
@@ -218,9 +241,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         info = self.current_sender.model().filePath(self.current_sender.currentIndex())
 
         # удаляем префикс из пути файла
-        search = normpath(info).split(self.project_root)[-1].split(self.server_root)[-1]
-        search = search.replace('\\', '/')
-
+        __, __, search = self.synchro.splitter(info)
         data, header = self.table_prepare_data(search)
         self.table_updater(self.table_model, data, header)
 
@@ -299,12 +320,13 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         _inf = self.current_sender.model().fileInfo(self.current_sender.currentIndex())
         if not _inf.isDir():
             self.fileslist = self.file_collector()
-            p = normpath(self.fileslist[-1]).replace(self.project_root, '${FROSH}').replace('\\', '/')
+            p = normpath(self.fileslist[-1]).lower().replace(self.project_root, '${FROSH}').replace('\\', '/')
+            print('click_project_tree', p)
             text = "SELECT asset_id, name, history, file FROM main_info WHERE file = '{}'".format(p)
             data = self.db.read_data(text, single=False)
             header = ['id', 'file name', 'version', 'path']
             self.table_updater(self.table_details_model, data, header)
-            self.update_table_model()
+        self.update_table_model()
 
     def click_server_tree(self):
         self.ui.submit.setEnabled(False)
@@ -383,7 +405,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         comment = self.submit_form.dialog.comment.toPlainText()
         if comment:
             comment = comment.encode('utf-8')
-        author = config.user
+        author = config_frosher.user
         # собираем список файлов чтобы оформить пакет для отправки в БД
         # 'проверка на валидность что-ли'
         if len(self.fileslist) > 0:
@@ -404,7 +426,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def get_version(self, filename=None, ver=None):
         """нужно получить путь к файлу и номер версии который мы хотим залить на локал"""
-        author = config.user
+        author = config_frosher.user
 
         """если не указан файл значит юзер сделал запрос из дерева, тогда просто вызываем файлколлектор
             и обновляем список выбранных ассетов до последних версий"""
@@ -432,29 +454,29 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
     def checkout(self):
         # " функция почемает файл в работу "
         # и отправляем в датабэйзера список файлов и сразу обнуляем его
-        self.db.change_status(self.fileslist, config.user)
+        self.db.change_status(self.fileslist, config_frosher.user)
         self.fileslist = []
         self.update_tree_views(self.ui.project_tree, self.directory, self.project_root)
         self.update_tree_views(self.ui.server_tree, self.server, self.server_root)
 
     def show_asset_create(self):
         self.asset_form.asset_type_cb.clear()
-        for i in config.ASSET_TYPES:
+        for i in config_frosher.ASSET_TYPES:
             self.asset_form.asset_type_cb.addItem(i)
         self.asset_form.show()
 
     def create_asset(self):
         """ создание структуры каталога для ассета в БД ничего не заводится """
         asset_creator = AssetCreator()
-        asset_type = config.ASSET_TYPES.get(self.asset_form.asset_type_cb.currentText())
+        asset_type = config_frosher.ASSET_TYPES.get(self.asset_form.asset_type_cb.currentText())
         name = self.asset_form.asset_name_in.text()
-        asset_creator.create_asset(config.ASSETS_ROOT, config.ASSET_STRUCTURE, asset_type, name)
+        asset_creator.create_asset(config_frosher.ASSETS_ROOT, config_frosher.ASSET_STRUCTURE, asset_type, name)
         self.asset_form.asset_name_in.setText('')
         self.asset_form.hide()
 
     def bookmark_select(self):
         ind = self.ui.bookmarks.currentIndex()
-        out = config.BOOKMARKS_DEFAULT.get(self.bookmarks.data(ind))
+        out = config_frosher.BOOKMARKS_DEFAULT.get(self.bookmarks.data(ind))
         out = out.replace('\\', '/')
         self.ui.project_tree.setCurrentIndex(self.directory.index(out))
         self.ui.project_tree.setExpanded(self.directory.index(out), True)
@@ -462,10 +484,10 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             self.update_table_model(out)
 
     def set_main_style(self):
-        file_of_the_style = normpath(join(self.__initial_folder, 'UI', 'style.qss'))
-        with open(file_of_the_style, 'r') as f:
-            style = f.read()
-        self.setStyleSheet(style)
+        # file_of_the_style = normpath(join(self.__initial_folder, 'UI', 'style.qss'))
+        # with open(file_of_the_style, 'r') as f:
+        #     style = f.read()
+        # self.setStyleSheet(style)
         self.setWindowTitle("eL` Frosher")
         self.setGeometry(QtCore.QRect(420, 55, 850, 520))
 

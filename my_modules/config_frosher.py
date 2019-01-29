@@ -1,16 +1,22 @@
 # -*- coding: utf-8 -*-
-from os import getenv
-from os.path import normpath, join
+from os import getenv, makedirs
+from os.path import normpath, join, split, exists
 
 # path
 PROJECT = getenv('FROSH').lower()
-# PROJECT = 'D:/tmp_Borzenko'
-SERVER = getenv('FROSH_SERVER').lower()
-VERSIONS = SERVER.replace('server', 'version').lower()
+# SERVER = getenv('FROSH_SERVER').lower()
+
+SERVER = r'O:\Frosh\frosh_depot\project_files'.lower()
+
+VERSIONS = join(split(SERVER)[0].lower(), 'versions')
+DB_FILE = join(split(SERVER)[0], 'db', 'el_frosher.db')
 ASSETS_ROOT = normpath(join(PROJECT, 'assets'))
 CHARACTERS = normpath(join(ASSETS_ROOT, 'chars'))
 PROPS = normpath(join(ASSETS_ROOT, 'obj'))
 LOCS = normpath(join(ASSETS_ROOT, 'locs'))
+
+# print(SERVER, ' ', VERSIONS)
+
 
 # ---- assets types ---- #
 ASSET_TYPES = {

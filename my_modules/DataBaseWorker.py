@@ -8,6 +8,7 @@ class DatabaseWorker:
         self.db_file = db_filename
         self.synchro = Synchronizer()
         self.project_root = None
+        print('DatabaseWorker init... ', self.db_file)
 
     def write_data(self, data):
         with sqlite3.connect(self.db_file) as db:
@@ -78,9 +79,9 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
         data = {}
         # local = project.replace('\\', '/')
         for a in x:
-            # print(a)
+            print('dicty iter ', a[1].replace('${FROSH}', ''))
             # отсекаем переменную, корень пути будем прибавлять там где потребуется этот словарь
-            data[normpath(a[1]).replace('${FROSH}', '')] = [a[2], a[3], a[4], a[5], a[0]]
+            data[a[1].replace('${FROSH}', '')] = [a[2], a[3], a[4], a[5], a[0]]
         return data
 
     def get_simple_dict(self):

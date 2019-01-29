@@ -1,11 +1,19 @@
 # -*- coding: utf-8 -*-
 from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
-from os.path import join, dirname, normpath
-# import sqlite3
+from os.path import join, dirname, normpath, exists, split
+from os import makedirs
+from elFrosher.my_modules import config_frosher
 
-current_dir = dirname(__file__)
 
-file = normpath(join(current_dir, 'db', 'tmp_work.db'))
+# current_dir = dirname(__file__)
+
+current_dir = split(config_frosher.SERVER)[0].replace('\\', '/')
+
+file = normpath(join(current_dir, 'db', 'el_frosher.db'))
+
+if not exists(normpath(split(file)[0])):
+    makedirs(split(file)[0])
+
 
 db = DatabaseWorker(file)
 print('create or update db... ', file)

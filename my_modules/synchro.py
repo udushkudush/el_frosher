@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import os
 from os.path import dirname, normpath, join, split
-from elFrosher.my_modules import config
+from elFrosher.my_modules import config_frosher
 from shutil import copy2
 
 
 class Synchronizer(object):
     def __init__(self):
-        self.project_root = normpath(config.PROJECT)
-        self.server_root = normpath(config.SERVER)
-        self.versions = normpath(config.VERSIONS)
+        self.project_root = normpath(config_frosher.PROJECT)
+        self.server_root = normpath(config_frosher.SERVER)
+        self.versions = normpath(config_frosher.VERSIONS)
         if not os.path.exists(self.server_root):
             os.makedirs(self.server_root)
 
@@ -43,7 +43,7 @@ class Synchronizer(object):
         else:
             source = this_file
             destination = normpath(join(self.server_root, suffix, filename))
-            versions = normpath(join(destination.replace('server', 'version'), str(ver), filename))
+            versions = normpath(join(config_frosher.VERSIONS, str(ver), filename))
 
         print('\n\rsource:\t\t\t', source)
         print('destination:\t', destination)
@@ -61,7 +61,9 @@ class Synchronizer(object):
             os.makedirs(current_path)
         copy2(source, destination)
         if versions:
+            print(current_path)
             current_path = split(versions)[0]
+            print('versions ', versions, ' current_path ', current_path)
             # todo это доп защита на время тестирования, потом можно грохнуть к хуям собачьим
             if not os.path.exists(current_path):
                 os.makedirs(current_path)

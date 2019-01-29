@@ -2,7 +2,7 @@
 from PySide2 import QtWidgets
 from PySide2.QtCore import QDir, Qt, QAbstractTableModel
 from PySide2.QtGui import QColor, QPixmap
-from elFrosher.my_modules import config
+from elFrosher.my_modules import config_frosher
 from os.path import normpath, join, dirname
 
 
@@ -29,14 +29,14 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
 
     def setpath(self, path):
         _idx = self.setRootPath(path)
-        print('setting path: ', path)
+        # print('setting path: ', path)
 
     def set_icons(self):
         self.folder_server = QPixmap('icons/ico_folder_srv.png').scaledToHeight(16, Qt.SmoothTransformation)
 
     def update(self, items_data, root_path):
         self.beginResetModel()
-        # print('получил словарь >> ', items_data)
+        # print(u'получил словарь >> ', items_data)
         self._itemsdata = items_data
         self._root_project = root_path
         self.endResetModel()
@@ -47,8 +47,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         if index.isValid and role == Qt.TextColorRole:
             _int = self.fileInfo(index)
             _path = self.filePath(index)
-            item = normpath(_path).split(self._root_project)[-1]
-
+            # делаем путь индекса относительным, меняем слеши на обратные как в БД
+            item = normpath(_path).lower().replace(self._root_project, '').replace('\\', '/')
+            db_path = self._itemsdata.get(item)
+            # print('item:\t\t{}\t\tdb_path:\t\t{}'.format(item, db_path))
             if _int.isDir():
                 for a in self._itemsdata.keys():
                     if item in a:
@@ -56,7 +58,6 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                         return
 
             # проверка что ключ есть в словаре, если нету, значит файл есть только на локале
-            db_path = self._itemsdata.get(item)
 
             if db_path:
                 version, local_version, checkout, editor, _id = db_path
@@ -66,10 +67,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                 elif version > local_version:
                     # print('версия устарела')
                     return QColor().fromRgb(120, 155, 35)
-                elif checkout and editor == config.user:
+                elif checkout and editor == config_frosher.user:
                     # print('файл в работе')
                     return QColor().fromRgb(245, 105, 107)
-                elif checkout and editor != config.user:
+                elif checkout and editor != config_frosher.user:
                     return QColor().fromRgb(45, 105, 237)
             else:
                 # print('файл или папка только на локале')
@@ -80,9 +81,8 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
             # рисуем иконки
             _int = self.fileInfo(index)
             _path = self.filePath(index)
-            item = normpath(_path).split(self._root_project)[-1]
-            # x = "/assets{}".format(_path.split('assets')[-1])
-            db_path = self._itemsdata.get(item)
+            # item = normpath(_path).split(self._root_project)[-1]
+            item = normpath(_path).lower().replace(self._root_project, '').replace('\\', '/')
 
             _int, info = self.fileInfo(index), index.data()
             if _int.isDir():
@@ -91,11 +91,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                     return self.folder_server.scaledToHeight(18, Qt.SmoothTransformation)
                 else:
                     return self.folder_local.scaledToHeight(18, Qt.SmoothTransformation)
-                # ico = QPixmap('icons/ico_folder_srv.png').scaledToHeight(16, Qt.SmoothTransformation)
-                # return ico
             else:
                 # для файлов куча проверок
                 db_path = self._itemsdata.get(item)
+                # print(">>> ", item)
                 if db_path:
                     version, local_version, checkout, editor, _id = db_path
                     if version and not local_version:
@@ -104,10 +103,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                     elif version > local_version:
                         # print('версия устарела')
                         return self.ico03.scaledToHeight(16, Qt.SmoothTransformation)
-                    elif checkout and editor == config.user:
+                    elif checkout and editor == config_frosher.user:
                         # print('файл в работе')
                         return self.ico02.scaledToHeight(16, Qt.SmoothTransformation)
-                    elif checkout and editor != config.user:
+                    elif checkout and editor != config_frosher.user:
                         # print('файл в работе')
                         return self.ico01.scaledToHeight(16, Qt.SmoothTransformation)
 
