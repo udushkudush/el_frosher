@@ -1,0 +1,151 @@
+/* ---- style ---- */
+QWidget{
+    background-color: rgb(80,80,80);
+    color: rgb(225,223,220);
+    font-size: 10pt;
+}
+
+/* ---- Tab ---- */
+QTabWidget::pane{
+    background-color: rgba(200,2,2, 0.2);
+    border-top: 1px rgb(200,200,200);
+}
+QTabBar::tab-bar{
+    left: 35px;
+}
+QTabBar::tab{
+    min-width: 75px;
+    min-height: 20px;
+    background: rgb(80,80,80);
+    border-top-left-radius: 3px;
+    border-top-right-radius: 3px;
+    border: 1px solid rgb(75,75,75)
+}
+QTabBar::tab:selected{
+    background: rgb(85,85,85);
+    border-color: rgb(100,100,100)
+}
+
+
+/* ----- standard colors for views ----- */
+
+QLineEdit, QListView, QTreeView, QTextEdit, QTableView{
+    background-color: rgb(43,43,43);
+    border-radius: 1px;
+    border: 1px solid rgb(55,55,55)
+}
+
+/* ---- List view ---- */
+QListView, QTableView, QTreeView{
+    alternate-background-color: rgb(46,47,48)
+}
+QListView::item:selected, QTableView::item:selected{
+    background-color: rgb(96,97,94);
+    color: rgb(15,16,15)
+}
+QListView::item:selected:!active,QTreeView::item:selected:!active{
+    background-color: rgb(100,120,105)
+}
+QListView:hover,QTreeView:hover,QTableView:hover{
+    background-color: rgb(44,45,46);
+    color: rgb(150,230,180)
+}
+QListView::item:hover,QTreeView::item:hover,QTableView::item:hover{
+    background-color: rgb(70,70,70);
+    color: rgb(37,37,55);
+}
+
+/* ---- QSplitter ---- */
+/* QSplitter#vertical_splitter::handle:horizontal{ */
+QSplitter#vertical_splitter::handle{
+    border-right-style: 3px dotted rgb(145,155,147);
+}
+/* QSplitter#horizontal_left_splitter::handle:vertical{ */
+QSplitter#horizontal_left_splitter::handle{
+    border-bottom-style: 3px dotted rgb(145,155,147);
+}
+/* ---- header ---- */
+QHeaderView:section, QTableCornerButton::section{
+    background-color: rgb(55, 55, 59);
+    font-size: 8pt;
+    color: rgb(80,80,80);
+    border: 1px solid rgb(71, 71, 73)
+}
+
+
+/* ---- QMENU ---- */
+QMenu{
+background-color: rgb(120,121,122);
+border: none
+}
+QMenu::item{
+background-color: rgb(85,85,85);
+border: 1px solid transparent;
+height: 24px;
+padding-left: 25px;
+padding-right: 25px;
+
+}
+QMenu::item:selected,QMenu::icon:hover{
+background-color: rgb(107,108,109);
+border: 1px solid rgb(125,127,128);
+}
+QMenu::icon{
+margin-left: 7px;
+margin-top: 3px;
+margin-bottom: 3px
+}
+
+
+/* color for empty PREVIEW */
+QLabel#preview{
+background-color: rgb(70,70,70);
+color: rgb(85,85,85)
+}
+QLineEdit{
+    min-height: 28px;
+    padding-left: 5px;
+}
+
+/* ---- COMBOBOX ---- */
+QComboBox{
+    background-color: rgb(43,43,43);
+    border: none;
+    border-radius: 3px;
+}
+QComboBox::drop-down{
+    border: none;
+    background-color: rgb(59,58,57);
+    width: 16px;
+}
+/* ---- BUTTONS ---- */
+
+QPushButton{
+    background: transparent;
+    border-radius: 16px;
+    border: 1px solid rgba(120,120,120,0.25);
+    max-height: 32px;
+    min-height: 32px;
+    min-width: 32px;
+    max-width: 32px;
+}
+
+QPushButton:hover{
+    background-color: rgba(215, 150, 75, 0.75);
+    border: 1px solid rgba(180,180,180,1)
+}
+QPushButton#confirm_submit{
+    width: 120px;
+    border-radius: 3px
+}
+QPushButton#close_btn{
+    background-color: rgb(200,120,32);
+    min-width: 10px;
+    max-width: 10px;
+    min-height: 10px;
+    max-height: 10px;
+    padding: 1px;
+}
+
+
+
