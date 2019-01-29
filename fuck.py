@@ -107,9 +107,10 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def setup_all_ui(self):
         # ---- DIALOGS ----- #
-        self.submit_form = SubmitDialog()
-        self.asset_form = CreateAssetDialog()
-
+        self.submit_form = SubmitDialog(self)
+        self.asset_form = CreateAssetDialog(self)
+        self.submit_form.hide()
+        self.asset_form.hide()
         # ---- splitters ---- #
         self.ui.horizontal_left_splitter.setSizes([150, 350])
         self.ui.vertical_splitter.setSizes([250, 300])
@@ -321,7 +322,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         if not _inf.isDir():
             self.fileslist = self.file_collector()
             p = normpath(self.fileslist[-1]).lower().replace(self.project_root, '${FROSH}').replace('\\', '/')
-            print('click_project_tree', p)
             text = "SELECT asset_id, name, history, file FROM main_info WHERE file = '{}'".format(p)
             data = self.db.read_data(text, single=False)
             header = ['id', 'file name', 'version', 'path']
@@ -404,12 +404,13 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.current_sender = self.ui.project_tree
         comment = self.submit_form.dialog.comment.toPlainText()
         if comment:
-            comment = comment.encode('utf-8')
+            # comment = comment.encode('utf-8')
+            comment = unicode(comment)
         author = config_frosher.user
         # собираем список файлов чтобы оформить пакет для отправки в БД
         # 'проверка на валидность что-ли'
         if len(self.fileslist) > 0:
-            # print(self.fileslist, author, comment, '\n________')
+            print(self.fileslist, author, comment, type(comment), '\n__<>__<>__', comment.decode('ascii'))
             ' отправляем сразу весь список файлов в БД '
             self.db.multiple_assets_records(self.fileslist, author, comment=comment)
             ' обновляем таблицу представления из БД '
@@ -493,15 +494,15 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
 
 class SubmitDialog(QtWidgets.QDialog):
-    def __init__(self):
-        super(SubmitDialog, self).__init__()
+    def __init__(self, parent):
+        super(SubmitDialog, self).__init__(parent)
         self.dialog = submit_dialog()
         self.dialog.setupUi(self)
 
 
 class CreateAssetDialog(QtWidgets.QWidget):
-    def __init__(self):
-        super(CreateAssetDialog, self).__init__()
+    def __init__(self, parent):
+        super(CreateAssetDialog, self).__init__(parent)
         self.dialog = create_asset_dialog()
         self.dialog.setupUi(self)
 

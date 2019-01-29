@@ -18,22 +18,21 @@ class Synchronizer(object):
         suffix = ''
         if self.server_root in this_file:
             suffix = this_file.replace(self.server_root, '')[1:]
-            print('founded server path: ', '\t', self.server_root)
+            # print('founded server path: ', '\t', self.server_root)
         elif self.project_root in this_file:
             suffix = this_file.replace(self.project_root, '')[1:]
-            print('founded local path: ', '\t', self.project_root)
+            # print('founded local path: ', '\t', self.project_root)
         elif '${FROSH}' in this_file:
             suffix = this_file.replace('${FROSH}', '')[1:]
-            print('founded DB path: ', '\t', this_file)
+            # print('founded DB path: ', '\t', this_file)
         else:
             print('this file : ', this_file, '\t', self.project_root, '\t', self.server_root)
         suffix, filename = split(suffix)
         converted = join('${FROSH}', suffix, filename).replace('\\', '/')
-        print(suffix, '\t', filename, '\t', converted)
+        # print(suffix, '\t', filename, '\t', converted)
         return suffix, filename, converted
 
     def path_corrector(self, this_file, ver=1):
-
         source, versions = '', ''
         # если файл подается с переменным путем, значит меняем направлением с сервака на локал
         suffix, filename, converted = self.splitter(this_file)
@@ -56,14 +55,14 @@ class Synchronizer(object):
         source, destination, versions = self.path_corrector(this_file, ver)
         # print('versions <<< ', versions)
         current_path = split(destination)[0]
-        print('copyng: ', source, 'to: >> ', current_path, '\n\r')
+        print('\n\rcopyng: ', source, 'to: >> ', current_path, '\n\r')
         if not os.path.exists(current_path):
             os.makedirs(current_path)
         copy2(source, destination)
         if versions:
-            print(current_path)
+            # print(current_path)
             current_path = split(versions)[0]
-            print('versions ', versions, ' current_path ', current_path)
+            # print('versions ', versions, ' current_path ', current_path)
             # todo это доп защита на время тестирования, потом можно грохнуть к хуям собачьим
             if not os.path.exists(current_path):
                 os.makedirs(current_path)

@@ -79,7 +79,7 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
         data = {}
         # local = project.replace('\\', '/')
         for a in x:
-            print('dicty iter ', a[1].replace('${FROSH}', ''))
+            # print('dicty iter ', a[1].replace('${FROSH}', ''))
             # отсекаем переменную, корень пути будем прибавлять там где потребуется этот словарь
             data[a[1].replace('${FROSH}', '')] = [a[2], a[3], a[4], a[5], a[0]]
         return data
@@ -120,7 +120,7 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
                     elif editor == user:
                         text = """DELETE FROM checkout WHERE asset_id = '{}' AND user_id = (
                         SELECT users.id FROM users WHERE login = '{}')""".format(asset_id, user)
-                        print('хм.. передумал значит редактировать, ладно сцыкло ебанное, хуй с тобой...')
+                        print(u'хм.. зассал значит редактировать...')
                         self.write_data(text)
 
                 elif int(version) > int(local_version):
@@ -183,9 +183,11 @@ VALUES ((select id from users where login='{}'), (SELECT assets.id FROM assets W
                 pending_list += 1
 
             if not comment:
-                comment = 'нет комента'
+                comment = u'нет комента'
             else:
-                comment = comment.decode('utf-8')
+                # comment = comment.decode('utf-8')
+                print('comment nodecode: {}'.format(comment))
+                print('comment decode: {}'.format(comment.decode('utf-8')))
 
             ''' теперь надо обработать список выделеных файлов '''
             'сначала добавляем список файлов по таблицам asset и pending'
@@ -223,7 +225,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     if local_version != version:
                         # если версии не совпадают файл пропускаем
                         skipped_files.append(filepath)
-                        print('skipped: >> \t', filepath)
+                        print(u'пропуск: >> \t', filepath)
                         continue
                     elif checkout and editor != author:
                         # если висит статус чекаут, сверяемся совпадают ли автор запроса и редактор, при несовпадении
@@ -235,7 +237,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     elif checkout and editor == author:
                         # редактор и автор запроса совпадают, при сабмите снимаем статус checkout
                         status = 1
-                        print('checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
+                        print(u'checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
 
                     # файл прошел все проверки и уже есть запись в базе, добавляем 1 к номеру версии
                     version = int(version) + 1
@@ -244,7 +246,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
 
                     # заливаем файло на сервак, вписываем итерируемый объект, с локальным путем, так как
                     # synchro определяет направление копирования исходя из поданого пути
-                    print('заливаем файло на сервак: ', file, version)
+                    print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
                     self.synchro.sync_file(file, version)
                     # print(text)
 
@@ -276,7 +278,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
 
                 else:
                     # asset_id = None, значит записи в БД нет, добавляем запись в таблицу ассетов, версия - 1
-                    print('\rnew asset record\n\n\r')
+                    print(u'\rновая запись\n\n\r')
                     version = 1
                     text = """INSERT INTO assets (file, name, version) VALUES ('{}', '{}', '{}')""".format(
                         filepath, name, version)
@@ -294,7 +296,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     self.write_data(text)
 
                     # заливаем файло на сервак
-                    print('заливаем файло на сервак: ', file, version)
+                    print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
                     self.synchro.sync_file(file, version)
 
                     # заводим статус в чекаут
@@ -313,7 +315,7 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
             # todo если файл в списке один и он пропущен то пендинг создается, надо разрулить этот момент
             if skipped_files:
                 if len(assetlist) == len(skipped_files):
-                    print('нет добавляемых файлов')
+                    print(u'нет добавляемых файлов')
             else:
                 text = """INSERT INTO info (pending_id, author_id, comment, date)
 VALUES ('{}', (SELECT id FROM users WHERE login= '{}'), '{}', datetime("now", "localtime"))""".format(
@@ -323,9 +325,9 @@ VALUES ('{}', (SELECT id FROM users WHERE login= '{}'), '{}', datetime("now", "l
 
             # выводим список пропущенных файлов
             if skipped_files:
-                print('\n\n\n', 'пропущенные файлы: ')
+                print(u'\n\n\nпропущенные файлы: ')
                 for s in skipped_files:
-                    print('skip: > ', s)
+                    print('skip: > {}'.format(s))
 
     def create_tables(self):
         # функция быстро создает все нужные таблицы со связями
@@ -418,7 +420,7 @@ PRIMARY KEY (asset_id, user_id)
             cursor = db.cursor()
             for t in tables:
                 xx = 'CREATE TABLE IF NOT EXISTS {}'.format(tables.get(t).replace('\n', ' '))
-                print(xx)
+                # print(xx)
                 cursor.execute(xx)
                 db.commit()
             cursor.close()
