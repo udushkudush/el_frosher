@@ -15,7 +15,7 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         self._root_project = None
         curentdir = dirname(__file__).split('models')[0]
         # normpath(join(curentdir, 'icons', ''))
-
+        self.server_root = config_frosher.SERVER.replace('\\', '/')
         self.folder_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_srv.png')))
         self.folder_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_local.png')))
         self.file_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_file_srv.png')))
@@ -26,13 +26,16 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         self.ico02 = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
         self.ico03 = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
         self.ico04 = QPixmap(normpath(join(curentdir, 'icons', 'file_checked.png')))
+        # 225,223,220
+        self.file_sync = QColor().fromRgb(125, 223, 125)
+        self.file_not_sync = QColor().fromRgb(60, 55, 62)
+        self.file_old = QColor().fromRgb(185, 190, 45)
+        self.file_in_work = QColor().fromRgb(225, 130, 130)
+        self.file_in_work_other = QColor().fromRgb(128, 130, 225)
 
     def setpath(self, path):
         _idx = self.setRootPath(path)
-        # print('setting path: ', path)
-
-    def set_icons(self):
-        self.folder_server = QPixmap('icons/ico_folder_srv.png').scaledToHeight(16, Qt.SmoothTransformation)
+        print('setting path: ', path)
 
     def update(self, items_data, root_path):
         self.beginResetModel()
@@ -54,8 +57,9 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
             if _int.isDir():
                 for a in self._itemsdata.keys():
                     if item in a:
-                        # окрашиваем папки в стандартный цвет если они синхронизированы с сервером
-                        return
+                        # окрашиваем папки в светлозеленый цвет если они синхронизированы с сервером
+                        # 225,223,220
+                        return self.file_sync
 
             # проверка что ключ есть в словаре, если нету, значит файл есть только на локале
 
@@ -63,19 +67,21 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                 version, local_version, checkout, editor, _id = db_path
                 if version and not local_version:
                     # print('файл только на серваке')
-                    return QColor().fromRgb(55, 56, 40)
+                    return self.file_not_sync
+                elif version == local_version and not checkout:
+                    return self.file_sync
                 elif version > local_version:
                     # print('версия устарела')
-                    return QColor().fromRgb(120, 155, 35)
+                    return self.file_old
                 elif checkout and editor == config_frosher.user:
                     # print('файл в работе')
-                    return QColor().fromRgb(245, 105, 107)
+                    return self.file_in_work
                 elif checkout and editor != config_frosher.user:
-                    return QColor().fromRgb(45, 105, 237)
+                    return self.file_in_work_other
             else:
                 # print('файл или папка только на локале')
                 # 225,223,220
-                return QColor().fromRgb(150, 150, 150)
+                return self.file_not_sync
 
         elif role == Qt.DecorationRole:
             # рисуем иконки
@@ -87,7 +93,7 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
             _int, info = self.fileInfo(index), index.data()
             if _int.isDir():
                 # назначаем иконки разного цвета для сервера и локала
-                if 'server' in _path:
+                if self.server_root in _path.lower():
                     return self.folder_server.scaledToHeight(18, Qt.SmoothTransformation)
                 else:
                     return self.folder_local.scaledToHeight(18, Qt.SmoothTransformation)

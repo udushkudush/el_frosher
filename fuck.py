@@ -48,9 +48,11 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
+        print('init my app...')
+        print('project root: ', self.project_root)
         self.synchro = Synchronizer()
         self.db = DatabaseWorker(self.__DATABASE)
-        self.db.project_root = config_frosher.PROJECT
+        self.db.project_root = self.project_root
         self.fileslist = []
         self.current_sender = None
         self.ui = myFuckingWindow()
@@ -306,7 +308,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
                 column_history = int(x)
         this_file = table.model().index(row, column_file).data()
         version = table.model().index(row, column_history).data()
-
+        # print('context_table: ', this_file, version)
         if action == first:
             # print('this_file', this_file, ' and rev number is: ', version)
             self.get_version(this_file, version)
@@ -403,14 +405,14 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # сабмитить можно только с локального дерева, значит выставляем его в качестве текущего сендера
         self.current_sender = self.ui.project_tree
         comment = self.submit_form.dialog.comment.toPlainText()
+        print('capture comment ', comment)
         if comment:
-            # comment = comment.encode('utf-8')
             comment = unicode(comment)
         author = config_frosher.user
         # собираем список файлов чтобы оформить пакет для отправки в БД
-        # 'проверка на валидность что-ли'
         if len(self.fileslist) > 0:
-            print(self.fileslist, author, comment, type(comment), '\n__<>__<>__', comment.decode('ascii'))
+            print('comment: ', comment)
+            print('encode: ', comment.encode('1251'))
             ' отправляем сразу весь список файлов в БД '
             self.db.multiple_assets_records(self.fileslist, author, comment=comment)
             ' обновляем таблицу представления из БД '
@@ -485,10 +487,10 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             self.update_table_model(out)
 
     def set_main_style(self):
-        # file_of_the_style = normpath(join(self.__initial_folder, 'UI', 'style.qss'))
-        # with open(file_of_the_style, 'r') as f:
-        #     style = f.read()
-        # self.setStyleSheet(style)
+        file_of_the_style = normpath(join(self.__initial_folder, 'UI', 'style.qss'))
+        with open(file_of_the_style, 'r') as f:
+            style = f.read()
+        self.setStyleSheet(style)
         self.setWindowTitle("eL` Frosher")
         self.setGeometry(QtCore.QRect(420, 55, 850, 520))
 

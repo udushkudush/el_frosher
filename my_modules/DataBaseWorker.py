@@ -183,11 +183,11 @@ VALUES ((select id from users where login='{}'), (SELECT assets.id FROM assets W
                 pending_list += 1
 
             if not comment:
-                comment = u'нет комента'
+                comment = 'no comment'
             else:
                 # comment = comment.decode('utf-8')
                 print('comment nodecode: {}'.format(comment))
-                print('comment decode: {}'.format(comment.decode('utf-8')))
+                print('comment decode: {}'.format(comment.encode('cp1251')))
 
             ''' теперь надо обработать список выделеных файлов '''
             'сначала добавляем список файлов по таблицам asset и pending'

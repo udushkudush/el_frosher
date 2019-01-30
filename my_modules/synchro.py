@@ -22,12 +22,13 @@ class Synchronizer(object):
         elif self.project_root in this_file:
             suffix = this_file.replace(self.project_root, '')[1:]
             # print('founded local path: ', '\t', self.project_root)
-        elif '${FROSH}' in this_file:
-            suffix = this_file.replace('${FROSH}', '')[1:]
+        elif '${frosh}' in this_file:
+            suffix = this_file.replace('${frosh}', '')[1:]
             # print('founded DB path: ', '\t', this_file)
         else:
-            print('this file : ', this_file, '\t', self.project_root, '\t', self.server_root)
+            print('splitter else: ', this_file, '\t', suffix, '\t', self.server_root)
         suffix, filename = split(suffix)
+        # print('splitter : ', this_file, '\t', suffix, '\t', filename)
         converted = join('${FROSH}', suffix, filename).replace('\\', '/')
         # print(suffix, '\t', filename, '\t', converted)
         return suffix, filename, converted
@@ -35,19 +36,20 @@ class Synchronizer(object):
     def path_corrector(self, this_file, ver=1):
         source, versions = '', ''
         # если файл подается с переменным путем, значит меняем направлением с сервака на локал
-        suffix, filename, converted = self.splitter(this_file)
-        if '${FROSH}' in this_file:
+        this_file = this_file.lower()
+        suffix, filename, converted = self.splitter(this_file.replace('\\', '/'))
+        if '${frosh}' in this_file:
             source = normpath(join(self.versions, suffix, filename, str(ver), filename))
             destination = normpath(join(self.project_root, suffix, filename))
         else:
             source = this_file
             destination = normpath(join(self.server_root, suffix, filename))
-            versions = normpath(join(config_frosher.VERSIONS, str(ver), filename))
+            versions = join(self.versions, suffix, filename, str(ver), filename)
 
         print('\n\rsource:\t\t\t', source)
         print('destination:\t', destination)
-        print('converted:\t\t', converted)
         print('versions:\t\t', versions, '\n\n\r')
+        print('converted:\t\t', converted)
         return source, destination, versions
 
     def sync_file(self, this_file, ver):
@@ -71,9 +73,9 @@ class Synchronizer(object):
 
 if __name__ == '__main__':
     c = Synchronizer()
-    x = normpath(r"D:\frosh\assets\obj\butterfly_01\rig_butterfly_01.ma")
-
-    # x = normpath(r"D:\tmp_server\assets\obj\butterfly_01\rig_butterfly_01.ma")
+    # x = normpath(r"D:\frosh\assets\obj\butterfly_01\rig_butterfly_01.ma")
+    # x = r"d:\frosh\assets\approaching_storm_2k.hdr"
+    x = r"${FROSH}\assets\approaching_storm_2k.hdr"
     # x = normpath("${FROSH}/assets/obj/butterfly_01/rig_butterfly_01.ma")
     # file = normpath(r"${FROSH}/assets/obj/flower_001/rig_flower_001.ma")
-    c.splitter(x)
+    c.path_corrector(x)
