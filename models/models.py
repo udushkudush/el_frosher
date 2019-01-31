@@ -28,7 +28,7 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         self.ico04 = QPixmap(normpath(join(curentdir, 'icons', 'file_checked.png')))
         # 225,223,220
         self.file_sync = QColor().fromRgb(125, 223, 125)
-        self.file_not_sync = QColor().fromRgb(60, 55, 62)
+        self.file_not_sync = QColor().fromRgb(127, 117, 119)
         self.file_old = QColor().fromRgb(185, 190, 45)
         self.file_in_work = QColor().fromRgb(225, 130, 130)
         self.file_in_work_other = QColor().fromRgb(128, 130, 225)
@@ -66,20 +66,20 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
             if db_path:
                 version, local_version, checkout, editor, _id = db_path
                 if version and not local_version:
-                    # print('файл только на серваке')
+                    # print('нет записи в БД о локальной версии')
                     return self.file_not_sync
                 elif version == local_version and not checkout:
                     return self.file_sync
                 elif version > local_version:
-                    # print('версия устарела')
+                    print('версия устарела')
                     return self.file_old
                 elif checkout and editor == config_frosher.user:
-                    # print('файл в работе')
+                    print('файл в работе')
                     return self.file_in_work
                 elif checkout and editor != config_frosher.user:
                     return self.file_in_work_other
             else:
-                # print('файл или папка только на локале')
+                # print('файл или папка на локале но не синхронизирован')
                 # 225,223,220
                 return self.file_not_sync
 
