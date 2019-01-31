@@ -245,6 +245,8 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         # удаляем префикс из пути файла
         __, __, search = self.synchro.splitter(info)
+        if sender == 'server':
+            print('update_table_model ', search)
         data, header = self.table_prepare_data(search)
         self.table_updater(self.table_model, data, header)
 
@@ -317,21 +319,23 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
     def click_project_tree(self):
         self.ui.submit.setEnabled(True)
         # устанавливаем в переменную сендера, так как он может быть использован в других коммандах
-        self.current_sender = self.sender()
+        self.current_sender = self.ui.project_tree
 
         # а пока обновляем данные из БД
         _inf = self.current_sender.model().fileInfo(self.current_sender.currentIndex())
         if not _inf.isDir():
-            self.fileslist = self.file_collector()
+            self.fileslist = self.file_collector(self.current_sender)
             p = normpath(self.fileslist[-1]).lower().replace(self.project_root, '${FROSH}').replace('\\', '/')
             text = "SELECT asset_id, name, history, file FROM main_info WHERE file = '{}'".format(p)
             data = self.db.read_data(text, single=False)
             header = ['id', 'file name', 'version', 'path']
             self.table_updater(self.table_details_model, data, header)
+            print(data)
         self.update_table_model()
 
     def click_server_tree(self):
         self.ui.submit.setEnabled(False)
+        self.current_sender = self.ui.server_tree
         self.update_table_model('server')
 
     def context_project_tree(self):
@@ -348,7 +352,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         submit = menu.addAction(ico3, 'submit')
 
         action = menu.exec_(QtGui.QCursor.pos())
-        self.fileslist = self.file_collector()
+        self.fileslist = self.file_collector(self.current_sender)
 
         if action == get_latest:
             self.get_version()
@@ -381,23 +385,26 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # обнуляем список на случай если сабмит не произошел и там сохранились старые выделенки
         self.fileslist = []
         # собираем список файлов чтобы оформить пакет для отправки в БД по умолчанию собираем из локального дерева
-        view = self.ui.project_tree
-        if sender:
-            view = sender
+        view = sender
+        # view = self.ui.project_tree
+        # if self.current_sender:
+        #     print(self.current_sender, ' ', view)
+        #     view = self.current_sender
         model = view.model()
         _ind = view.selectionModel().selectedIndexes()
         indexes = [x for x in _ind if x.column() == 0]
         fileslist = [normpath(model.filePath(x)) for x in indexes if not model.fileInfo(x).isDir()]
-
+        self.current_sender = None
         return fileslist
 
     def submit_clicked(self):
-        self.current_sender = self.ui.project_tree
-        self.fileslist = self.file_collector()
+        # self.current_sender = self.ui.project_tree
+        self.fileslist = self.file_collector(self.ui.project_tree)
         self.submit_form.show()
 
     def get_version_clicked(self):
-        self.fileslist = self.file_collector()
+        # кнопка на панельке берет последнюю версию, индекс берет из того последнего юзаного дерева
+        self.fileslist = self.file_collector(self.current_sender)
         self.get_version()
 
     def submit_func(self):
