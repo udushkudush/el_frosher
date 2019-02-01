@@ -31,7 +31,7 @@ from elFrosher.my_modules import config_frosher
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
-from os.path import dirname, join, normpath, normcase
+from os.path import dirname, join, normpath, normcase, getsize
 import sys
 
 
@@ -50,10 +50,15 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         super(SomeFuckingShit, self).__init__(*args)
         print('init my app...')
         print('project root: ', self.project_root)
+        # self.pb = MyProgressBar(self)
+        # self.pb.setGeometry(QtCore.QRect(500, 150, 275, 64))
+        # self.pb.show()
         self.synchro = Synchronizer()
         self.db = DatabaseWorker(self.__DATABASE)
         self.db.project_root = self.project_root
         self.fileslist = []
+        self.table_model = ''
+        self.table_details_model = ''
         self.current_sender = None
         self.ui = myFuckingWindow()
         self.ui.setupUi(self)
@@ -81,9 +86,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.bookmarks.setStringList(bookmarks)
         self.ui.bookmarks.setModel(self.bookmarks)
         # переменныю для таблиц
-        self.table_model = ''
-        self.table_details_model = ''
-        self.init_table()
+        # self.init_table()
 
     def buttons(self):
         self.ui.get_version.setText('')
@@ -121,15 +124,12 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.directory = ServerTreeModel()
         self.server = ServerTreeModel()
 
-        # dicty = self.db.get_dict(self.project_root, config.user)
-        # self.directory.update(dicty, self.project_root)
         self.updater_tree_model(self.directory, self.project_root)
         self.directory.setpath(self.project_root)
         # ----- set project dir in tree view ----- #
         main_tree = self.ui.project_tree
         main_tree.setModel(self.directory)
         main_tree.setRootIndex(self.directory.index(self.project_root))
-        # main_tree.expanded.connect(self.expander)
         main_tree.setColumnHidden(1, True)
         main_tree.setColumnHidden(2, True)
         main_tree.setColumnHidden(3, True)
@@ -137,7 +137,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         main_tree.setHeaderHidden(True)
         main_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         main_tree.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        # main_tree.clicked.connect(lambda zz: s'lol'))
         main_tree.customContextMenuRequested.connect(self.context_project_tree)
 
         server_tree = self.ui.server_tree
@@ -153,9 +152,45 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         server_tree.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
         server_tree.customContextMenuRequested.connect(self.context_server_tree)
 
+        # табличко
+        data, header = self.table_prepare_data()
+        details = self.ui.details_table
+        pending = self.ui.pending_table
+        if not data:
+            data = [('', 'база пустая')]
+            # print('init table...')
+        data2 = [('', 'выбери файл в дереве слева', '', 'или в верхней таблице')]
+        header2 = ['(.)(.)', '(o)', '(.)(.)', '(o)']
+
+        self.table_model = DataBaseViewer(data, header)
+        self.table_details_model = DataBaseViewer(data2, header2)
+
+        pending.setModel(self.table_model)
+        details.setModel(self.table_details_model)
+
+        pending.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        pending.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        pending.verticalHeader().hide()
+        pending.setColumnWidth(0, 48)
+        pending.setColumnWidth(1, 450)
+        pending.setColumnWidth(2, 150)
+        pending.setColumnWidth(3, 85)
+
+        details.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
+        details.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
+        details.verticalHeader().hide()
+        details.setColumnWidth(0, 48)
+        details.setColumnWidth(1, 180)
+        details.setColumnWidth(2, 48)
+        details.setColumnWidth(3, 210)
+        details.setColumnWidth(4, 75)
+        # pending.customContextMenuRequested.connect(self.context_table)
+        # self.ui.details_table.verticalHeader().setSectionSize(15)
+
     def setup_signals(self):
         # сигналы для деревьев
         self.ui.project_tree.selectionModel().selectionChanged.connect(self.click_project_tree)
+        # self.ui.project_tree.expanded.connect(self.expander)
         self.ui.server_tree.selectionModel().selectionChanged.connect(self.click_server_tree)
 
         self.ui.submit.clicked.connect(self.submit_clicked)
@@ -201,40 +236,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         header = ['list', 'comment', 'author', 'data']
         return data, header
 
-    def init_table(self):
-
-        data, header = self.table_prepare_data()
-        details = self.ui.details_table
-        pending = self.ui.pending_table
-        if not data:
-            data = [('записей', 'не', 'найдено'), ('прям', 'ваще нахуй', 'пусто')]
-            # print('init table...')
-        data2 = [('', 'выбери ', '', 'что-нибудь в верхнейтаблице')]
-        header2 = ['(.)(.)', '(.)', '(.)(.)', '(.)']
-        self.table_model = DataBaseViewer(data, header)
-        self.table_details_model = DataBaseViewer(data2, header2)
-
-        pending.setModel(self.table_model)
-        details.setModel(self.table_details_model)
-
-        pending.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        pending.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        pending.verticalHeader().hide()
-        pending.setColumnWidth(0, 48)
-        pending.setColumnWidth(1, 450)
-        pending.setColumnWidth(2, 150)
-        pending.setColumnWidth(3, 85)
-
-        details.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
-        details.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
-        details.verticalHeader().hide()
-        details.setColumnWidth(0, 48)
-        details.setColumnWidth(1, 210)
-        details.setColumnWidth(2, 48)
-        details.setColumnWidth(3, 420)
-        # pending.customContextMenuRequested.connect(self.context_table)
-        # self.ui.details_table.verticalHeader().setSectionSize(15)
-
     def update_table_model(self, sender=None):
         if sender == 'server':
             self.current_sender = self.ui.server_tree
@@ -243,6 +244,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # забираем текущий индекс из дерева
         info = self.current_sender.model().filePath(self.current_sender.currentIndex())
 
+        print('update_table_model sender: ', self.current_sender)
         # удаляем префикс из пути файла
         __, __, search = self.synchro.splitter(info)
         if sender == 'server':
@@ -314,29 +316,34 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         if action == first:
             # print('this_file', this_file, ' and rev number is: ', version)
             self.get_version(this_file, version)
-            self.update_table_model(this_file)
+            self.update_table_model()
 
     def click_project_tree(self):
         self.ui.submit.setEnabled(True)
-        # устанавливаем в переменную сендера, так как он может быть использован в других коммандах
-        self.current_sender = self.ui.project_tree
+        self.click_tree(self.ui.project_tree)
+
+    def click_server_tree(self):
+        # откулючаем кнопку сабмита, так как из дерева сервера делать это нельзя
+        self.ui.submit.setEnabled(False)
+        self.click_tree(self.ui.server_tree)
+        # self.update_table_model('server')
+
+    def click_tree(self, sender):
+        # self.current_sender = self.ui.project_tree
+        self.current_sender = sender
 
         # а пока обновляем данные из БД
         _inf = self.current_sender.model().fileInfo(self.current_sender.currentIndex())
         if not _inf.isDir():
-            self.fileslist = self.file_collector(self.current_sender)
-            p = normpath(self.fileslist[-1]).lower().replace(self.project_root, '${FROSH}').replace('\\', '/')
-            text = "SELECT asset_id, name, history, file FROM main_info WHERE file = '{}'".format(p)
+            __, __, last_file = self.synchro.splitter(_inf.filePath())
+            # print('>>> ', last_file)
+            text = "SELECT asset_id, name, history, comment, file FROM main_info WHERE file = '{}'".format(last_file)
+            # забираем все записи о файле чтобы вывести всю историю изменений
             data = self.db.read_data(text, single=False)
-            header = ['id', 'file name', 'version', 'path']
+            header = ['id', 'file name', 'version', 'comment', 'path']
             self.table_updater(self.table_details_model, data, header)
             print(data)
         self.update_table_model()
-
-    def click_server_tree(self):
-        self.ui.submit.setEnabled(False)
-        self.current_sender = self.ui.server_tree
-        self.update_table_model('server')
 
     def context_project_tree(self):
         menu = QtWidgets.QMenu(self)
@@ -414,12 +421,10 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         comment = self.submit_form.dialog.comment.toPlainText()
         print('capture comment ', comment)
         if comment:
-            comment = unicode(comment)
+            comment = comment
         author = config_frosher.user
         # собираем список файлов чтобы оформить пакет для отправки в БД
         if len(self.fileslist) > 0:
-            print('comment: ', comment)
-            print('encode: ', comment.encode('1251'))
             ' отправляем сразу весь список файлов в БД '
             self.db.multiple_assets_records(self.fileslist, author, comment=comment)
             ' обновляем таблицу представления из БД '
@@ -514,6 +519,24 @@ class CreateAssetDialog(QtWidgets.QWidget):
         super(CreateAssetDialog, self).__init__(parent)
         self.dialog = create_asset_dialog()
         self.dialog.setupUi(self)
+
+
+class MyProgressBar(QtWidgets.QWidget):
+    def __init__(self, parent):
+        super(MyProgressBar, self).__init__(parent)
+        self.my_pb = QtWidgets.QProgressBar()
+        self.my_pb.setMinimum(0)
+        self.my_pb.setMaximum(100)
+        self.my_pb.setValue(0)
+        self.my_pb.setParent(self)
+        self.my_pb.setObjectName('progress_bar')
+        self.my_pb.setTextVisible(False)
+
+    def progress(self, file_source, file_destination):
+        size = getsize(file_source)
+        while True:
+            pass
+
 
 
 if __name__ == '__main__':
