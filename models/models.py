@@ -71,7 +71,7 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                 elif version == local_version and not checkout:
                     return self.file_sync
                 elif version > local_version:
-                    print('версия устарела')
+                    # print('версия устарела')
                     return self.file_old
                 elif checkout and editor == config_frosher.user:
                     print('файл в работе')

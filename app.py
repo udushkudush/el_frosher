@@ -171,19 +171,28 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         pending.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         pending.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         pending.verticalHeader().hide()
-        pending.setColumnWidth(0, 48)
-        pending.setColumnWidth(1, 450)
-        pending.setColumnWidth(2, 150)
-        pending.setColumnWidth(3, 85)
+        pending.setColumnWidth(0, 36)
+        pending.setColumnWidth(1, 285)
+        pending.setColumnWidth(2, 135)
+        pending.setColumnWidth(3, 120)
+        pending.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
+        # pending.horizontalHeader().resizeContentPrecision(5)
+
 
         details.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         details.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         details.verticalHeader().hide()
-        details.setColumnWidth(0, 48)
-        details.setColumnWidth(1, 180)
+        details.setColumnWidth(0, 36)
+        # details.setColumnWidth(1, 180)
+        details.resizeColumnToContents(1)
+        w = details.columnWidth(1)
+        print('wwww: ', w)
         details.setColumnWidth(2, 48)
         details.setColumnWidth(3, 210)
         details.setColumnWidth(4, 75)
+        details.resizeColumnToContents(1)
+        details.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
+        details.horizontalHeader().setResizeContentsPrecision(2)
         # pending.customContextMenuRequested.connect(self.context_table)
         # self.ui.details_table.verticalHeader().setSectionSize(15)
 
@@ -208,6 +217,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.pending_table.clicked.connect(self.pending)
         self.ui.details_table.customContextMenuRequested.connect(self.context_table)
         self.ui.details_table.clicked.connect(self.test)
+        # self.ui.details_table.model()  #dataChanged(lambda x: print('--data is changed--'))
 
     def updater_tree_model(self, model, model_root):
         dicty = self.db.get_dict(config_frosher.user)
@@ -236,19 +246,13 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         header = ['list', 'comment', 'author', 'data']
         return data, header
 
-    def update_table_model(self, sender=None):
-        if sender == 'server':
-            self.current_sender = self.ui.server_tree
-        else:
-            self.current_sender = self.ui.project_tree
+    def update_table_model(self, sender):
+        self.current_sender = sender
         # забираем текущий индекс из дерева
         info = self.current_sender.model().filePath(self.current_sender.currentIndex())
 
-        print('update_table_model sender: ', self.current_sender)
         # удаляем префикс из пути файла
         __, __, search = self.synchro.splitter(info)
-        if sender == 'server':
-            print('update_table_model ', search)
         data, header = self.table_prepare_data(search)
         self.table_updater(self.table_model, data, header)
 
@@ -316,7 +320,8 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         if action == first:
             # print('this_file', this_file, ' and rev number is: ', version)
             self.get_version(this_file, version)
-            self.update_table_model()
+            print('last sender was: ', self.current_sender)
+            self.update_table_model(self.current_sender)
 
     def click_project_tree(self):
         self.ui.submit.setEnabled(True)
@@ -343,7 +348,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             header = ['id', 'file name', 'version', 'comment', 'path']
             self.table_updater(self.table_details_model, data, header)
             print(data)
-        self.update_table_model()
+        self.update_table_model(self.current_sender)
 
     def context_project_tree(self):
         menu = QtWidgets.QMenu(self)
@@ -428,7 +433,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             ' отправляем сразу весь список файлов в БД '
             self.db.multiple_assets_records(self.fileslist, author, comment=comment)
             ' обновляем таблицу представления из БД '
-            self.update_table_model()
+            self.update_table_model(self.ui.project_tree)
             ' очищаем поле коментария и закрываем к хуям окошко '
             self.submit_form.dialog.comment.setPlainText('')
             self.submit_form.hide()
@@ -496,7 +501,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.project_tree.setCurrentIndex(self.directory.index(out))
         self.ui.project_tree.setExpanded(self.directory.index(out), True)
         if isinstance(out, str):
-            self.update_table_model(out)
+            self.update_table_model(self.current_sender)
 
     def set_main_style(self):
         file_of_the_style = normpath(join(self.__initial_folder, 'UI', 'style.qss'))

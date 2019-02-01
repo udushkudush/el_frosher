@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import os
-from os.path import dirname, normpath, join, split
+from PySide2 import QtWidgets, QtCore
+from os.path import dirname, normpath, join, split, getsize
 from elFrosher.my_modules import config_frosher
 from shutil import copy2
 
@@ -16,6 +17,7 @@ class Synchronizer(object):
     def splitter(self, this_file):
         source_file = normpath(this_file).lower()
         suffix = ''
+        # print('file size: ', getsize(source_file))
         if self.server_root in source_file:
             suffix = source_file.replace(self.server_root, '')[1:]
             print('founded server path: ', '\t', self.server_root)
@@ -29,16 +31,15 @@ class Synchronizer(object):
             print('splitter else: ', source_file, '\t', suffix, '\t', self.server_root)
         suffix, filename = split(suffix)
         converted = join('${FROSH}', suffix, filename).replace('\\', '/')
-        return suffix, filename, converted, source_file
-
-
+        # print(suffix, ' ', filename, ' ', converted)
+        return suffix, filename, converted
 
     def path_corrector(self, this_file, ver=1):
         source, versions, destination = '', '', ''
 
         # если файл подается с переменным путем, то указываем явным образом направление с сервака на локал
-        # this_file = normpath(this_file.lower())
-        suffix, filename, converted, this_file = self.splitter(this_file)
+        this_file = normpath(this_file.lower())
+        suffix, filename, converted = self.splitter(this_file)
 
         if '${frosh}' in this_file or self.server_root in this_file:
             source = normpath(join(self.versions, suffix, filename, str(ver), filename))
@@ -73,11 +74,16 @@ class Synchronizer(object):
             copy2(source, versions)
 
 
+
 if __name__ == '__main__':
     c = Synchronizer()
     # x = normpath(r"D:\frosh\assets\obj\butterfly_01\rig_butterfly_01.ma")
-    x = r"o:/frosh/frosh_depot/project_files/assets/obj/compas/maps/compas_mask.tif"
+    x = r"D:/frosh/assets/approaching_storm_2k.hdr"
+    # x = r'D:\\frosh\\assets\\obj\\cone\\maps\\cone_diffuse_raw.tif'
     # x = r"${FROSH}\assets\approaching_storm_2k.hdr"
     # x = normpath("${FROSH}/assets/obj/butterfly_01/rig_butterfly_01.ma")
     # file = normpath(r"${FROSH}/assets/obj/flower_001/rig_flower_001.ma")
-    c.path_corrector(x)
+
+    c.splitter(x)
+
+
