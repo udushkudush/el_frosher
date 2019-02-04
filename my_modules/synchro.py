@@ -20,13 +20,13 @@ class Synchronizer(object):
         # print('file size: ', getsize(source_file))
         if self.server_root in source_file:
             suffix = source_file.replace(self.server_root, '')[1:]
-            print('founded server path: ', '\t', self.server_root)
+            # print('founded server path: ', '\t', self.server_root)
         elif self.project_root in source_file:
             suffix = source_file.replace(self.project_root, '')[1:]
-            print('founded local path: ', '\t', self.project_root)
+            # print('founded local path: ', '\t', self.project_root)
         elif '${frosh}' in source_file:
             suffix = source_file.replace('${frosh}', '')[1:]
-            print('founded DB path: ', '\t', source_file)
+            # print('founded DB path: ', '\t', source_file)
         else:
             print('splitter else: ', source_file, '\t', suffix, '\t', self.server_root)
         suffix, filename = split(suffix)
@@ -49,10 +49,10 @@ class Synchronizer(object):
             destination = normpath(join(self.server_root, suffix, filename))
             versions = join(self.versions, suffix, filename, str(ver), filename)
 
-        print('\n\rsource:\t\t\t', source)
-        print('destination:\t', destination)
-        print('versions:\t\t', versions, '\n\n\r')
-        print('converted:\t\t', converted)
+        # print('\n\rsource:\t\t\t', source)
+        # print('destination:\t', destination)
+        # print('versions:\t\t', versions, '\n\n\r')
+        # print('converted:\t\t', converted)
         return source, destination, versions
 
     def sync_file(self, this_file, ver):
