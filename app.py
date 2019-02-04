@@ -31,12 +31,14 @@ from elFrosher.my_modules import config_frosher
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
-from os.path import dirname, join, normpath, normcase, getsize
-import sys
+from elFrosher.UI.settings import Ui_edit_settings as edit_settings
+from os.path import dirname, join, normpath, normcase, getsize, split, exists
+import sys, os
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
+    # local_settings = [x for x in os.getenv('MAYA_SCRIPT_PATH').split(';') if 'maya/scripts' in x][0]
     # __DATABASE = normpath(join(config_frosher.SERVER, 'db', 'el_frosher.db'))
     __DATABASE = config_frosher.DB_FILE
     asset_form, submit_form = '', ''
@@ -364,7 +366,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         submit = menu.addAction(ico3, 'submit')
 
         action = menu.exec_(QtGui.QCursor.pos())
-        self.fileslist = self.file_collector(self.current_sender)
 
         if action == get_latest:
             self.get_version()
@@ -474,8 +475,18 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
     def checkout(self):
         # " функция почемает файл в работу "
         # и отправляем в датабэйзера список файлов и сразу обнуляем его
+        xx = self.ui.trees_views.currentWidget().objectName()
+        if xx == 'workspace':
+            self.current_sender = self.ui.project_tree
+            print('localik')
+        else:
+            self.current_sender = self.ui.server_tree
+            print('servachok')
+
+        self.fileslist = self.file_collector(self.current_sender)
         self.db.change_status(self.fileslist, config_frosher.user)
         self.fileslist = []
+
         self.update_tree_views(self.ui.project_tree, self.directory, self.project_root)
         self.update_tree_views(self.ui.server_tree, self.server, self.server_root)
 
@@ -526,6 +537,14 @@ class CreateAssetDialog(QtWidgets.QWidget):
         self.dialog.setupUi(self)
 
 
+class EditSettingsDialog(QtWidgets.QWidget):
+    def __init__(self, parent):
+        super(EditSettingsDialog, self).__init__(parent)
+        self.dialog = edit_settings()
+        self.dialog.setupUi(self)
+        __setings = join(split(dirname(__file__)), 'settings.ini')
+
+
 class MyProgressBar(QtWidgets.QWidget):
     def __init__(self, parent):
         super(MyProgressBar, self).__init__(parent)
@@ -538,7 +557,21 @@ class MyProgressBar(QtWidgets.QWidget):
         self.my_pb.setTextVisible(False)
 
     def progress(self, file_source, file_destination):
-        size = getsize(file_source)
+        size_src = float(getsize(file_source))
+        size_dst = float(getsize(file_destination))
+        percentage = int(size_dst/size_src*100)
+        try:
+            self.my_pb.setValue(percentage)
+        except:
+            pass
+
+        app.processEvents()
+
+    def copydone(self, file_source, file_destination, copied):
+        self.my_pb.setValue(100)
+
+    def copyfileobj(self, file_source, file_destination, callback_progress, callback_copydone, length=16*1024):
+
         while True:
             pass
 

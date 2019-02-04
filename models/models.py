@@ -18,14 +18,21 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         self.server_root = config_frosher.SERVER.replace('\\', '/')
         self.folder_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_srv.png')))
         self.folder_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_local.png')))
-        self.file_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_file_srv.png')))
-        self.file_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
-        self.file_lock = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
-        self.file_lock_red = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
-        self.ico01 = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
-        self.ico02 = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
-        self.ico03 = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
-        self.ico04 = QPixmap(normpath(join(curentdir, 'icons', 'file_checked.png')))
+        # self.file_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_file_srv.png')))
+        # self.file_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
+        # self.file_lock = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
+        # self.file_lock_red = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
+        # self.ico01 = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
+        # self.ico02 = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
+        # self.ico03 = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
+        # self.ico04 = QPixmap(normpath(join(curentdir, 'icons', 'file_checked.png')))
+
+        self.ico_file_sync = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_sync.png')))
+        self.ico_file_not_sync = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_not_sync.png')))
+        self.ico_file_old = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_old.png')))
+        self.ico_file_in_work = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_in_work.png')))
+        self.ico_in_work_other = QPixmap(normpath(join(curentdir, 'icons', 'icon_in_work_other.png')))
+
         # 225,223,220
         self.file_sync = QColor().fromRgb(125, 223, 125)
         self.file_not_sync = QColor().fromRgb(127, 117, 119)
@@ -105,21 +112,23 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                     version, local_version, checkout, editor, _id = db_path
                     if version and not local_version:
                         # print('файл только на серваке')
-                        return self.ico04.scaledToHeight(16, Qt.SmoothTransformation)
+                        return self.ico_file_not_sync.scaledToHeight(16, Qt.SmoothTransformation)
+                    elif version == local_version and not checkout:
+                        return self.ico_file_sync.scaledToHeight(16, Qt.SmoothTransformation)
                     elif version > local_version:
                         # print('версия устарела')
-                        return self.ico03.scaledToHeight(16, Qt.SmoothTransformation)
+                        return self.ico_file_old.scaledToHeight(16, Qt.SmoothTransformation)
                     elif checkout and editor == config_frosher.user:
                         # print('файл в работе')
-                        return self.ico02.scaledToHeight(16, Qt.SmoothTransformation)
+                        return self.ico_file_in_work.scaledToHeight(16, Qt.SmoothTransformation)
                     elif checkout and editor != config_frosher.user:
                         # print('файл в работе')
-                        return self.ico01.scaledToHeight(16, Qt.SmoothTransformation)
+                        return self.ico_in_work_other.scaledToHeight(16, Qt.SmoothTransformation)
 
                 # else:
                 #     return self.ico04.scaledToHeight(16, Qt.SmoothTransformation)
 
-                return self.file_server.scaledToHeight(16, Qt.SmoothTransformation)
+                return self.ico_file_not_sync.scaledToHeight(16, Qt.SmoothTransformation)
 
 
         else:
