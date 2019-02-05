@@ -194,7 +194,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         details.setColumnWidth(4, 75)
         details.resizeColumnToContents(1)
         details.horizontalHeader().setSectionResizeMode(3, QtWidgets.QHeaderView.Stretch)
-        details.horizontalHeader().setResizeContentsPrecision(2)
+        # details.horizontalHeader().setResizeContentsPrecision(2)
         # pending.customContextMenuRequested.connect(self.context_table)
         # self.ui.details_table.verticalHeader().setSectionSize(15)
 
