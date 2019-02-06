@@ -1,5 +1,19 @@
 # -*- coding: utf-8 -*-
 from PySide2 import QtCore, QtWidgets, QtGui
+from os.path import dirname, join, normpath, normcase, getsize, split, exists
+import sys, os
+import logging
+
+log = logging.getLogger('elFrosher')
+log.setLevel(logging.DEBUG)
+setfile = normpath(join(dirname(__file__), 'myLog.txt'))
+fh = logging.FileHandler(setfile, mode='w')
+# fh = logging.FileHandler(setfile)
+# formatter = logging.Formatter(u'%(lineno): %(func) - %(levelname)-8s\t[%(asctime)s]\t%(message)s')
+formatter = logging.Formatter(u'%(levelname)-8s | %(lineno)-3d | %(module)-25s |\t[%(asctime)s] |\t%(message)s')
+fh.setFormatter(formatter)
+log.addHandler(fh)
+
 from elFrosher.my_modules.asset_creator import AssetCreator
 
 import elFrosher.my_modules.DataBaseWorker as DB_Worker
@@ -32,13 +46,12 @@ from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
 from elFrosher.UI.settings import Ui_edit_settings as edit_settings
-from os.path import dirname, join, normpath, normcase, getsize, split, exists
-import sys, os
+
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
-    # local_settings = [x for x in os.getenv('MAYA_SCRIPT_PATH').split(';') if 'maya/scripts' in x][0]
+
     # __DATABASE = normpath(join(config_frosher.SERVER, 'db', 'el_frosher.db'))
     __DATABASE = config_frosher.DB_FILE
     asset_form, submit_form = '', ''
@@ -50,8 +63,8 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
-        print('init my app...')
-        print('project root: ', self.project_root)
+        log.info('init my app...')
+        log.info('project root: {}'.format(self.project_root))
         # self.pb = MyProgressBar(self)
         # self.pb.setGeometry(QtCore.QRect(500, 150, 275, 64))
         # self.pb.show()
@@ -160,7 +173,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         pending = self.ui.pending_table
         if not data:
             data = [('', 'база пустая')]
-            # print('init table...')
         data2 = [('', 'выбери файл в дереве слева', '', 'или в верхней таблице')]
         header2 = ['(.)(.)', '(o)', '(.)(.)', '(o)']
 
@@ -188,7 +200,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # details.setColumnWidth(1, 180)
         details.resizeColumnToContents(1)
         w = details.columnWidth(1)
-        print('wwww: ', w)
         details.setColumnWidth(2, 48)
         details.setColumnWidth(3, 210)
         details.setColumnWidth(4, 75)
@@ -236,7 +247,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         table = 'main_info'
         # если есть параметр фильтра то отсеиваем данные по входящему значению
         if search:
-            # print('search input: ', search)
             # select pending, name, file from main_info where file like '%/assets/chars%'
             data = """SELECT pending, comment, author, submit_date
                 FROM '{}' WHERE file LIKE '%{}%'""".format(table, search)
@@ -318,11 +328,8 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
                 column_history = int(x)
         this_file = table.model().index(row, column_file).data()
         version = table.model().index(row, column_history).data()
-        # print('context_table: ', this_file, version)
         if action == first:
-            # print('this_file', this_file, ' and rev number is: ', version)
             self.get_version(this_file, version)
-            print('last sender was: ', self.current_sender)
             self.update_table_model(self.current_sender)
 
     def click_project_tree(self):
@@ -333,23 +340,22 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # откулючаем кнопку сабмита, так как из дерева сервера делать это нельзя
         self.ui.submit.setEnabled(False)
         self.click_tree(self.ui.server_tree)
-        # self.update_table_model('server')
 
     def click_tree(self, sender):
         # self.current_sender = self.ui.project_tree
         self.current_sender = sender
 
         # а пока обновляем данные из БД
+        # todo тут происходит двойной вызов, надо ограничиться текущим деревом
         _inf = self.current_sender.model().fileInfo(self.current_sender.currentIndex())
         if not _inf.isDir():
             __, __, last_file = self.synchro.splitter(_inf.filePath())
-            # print('>>> ', last_file)
             text = "SELECT asset_id, name, history, comment, file FROM main_info WHERE file = '{}'".format(last_file)
             # забираем все записи о файле чтобы вывести всю историю изменений
             data = self.db.read_data(text, single=False)
             header = ['id', 'file name', 'version', 'comment', 'path']
             self.table_updater(self.table_details_model, data, header)
-            print(data)
+            log.info('data from db:\t{}'.format(data))
         self.update_table_model(self.current_sender)
 
     def context_project_tree(self):
@@ -372,9 +378,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         elif action == checkout:
             self.checkout()
         elif action == submit:
-            # x = self.sender()
-            # print(x)
-            # self.current_sender = x
             self.submit_form.show()
 
     def context_server_tree(self):
@@ -398,16 +401,20 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # обнуляем список на случай если сабмит не произошел и там сохранились старые выделенки
         self.fileslist = []
         # собираем список файлов чтобы оформить пакет для отправки в БД по умолчанию собираем из локального дерева
+        xx = self.ui.trees_views.currentWidget().objectName()
+        if xx == 'workspace':
+            view = self.ui.project_tree
+        else:
+            view = self.ui.server_tree
+
         view = sender
-        # view = self.ui.project_tree
-        # if self.current_sender:
-        #     print(self.current_sender, ' ', view)
-        #     view = self.current_sender
         model = view.model()
         _ind = view.selectionModel().selectedIndexes()
         indexes = [x for x in _ind if x.column() == 0]
         fileslist = [normpath(model.filePath(x)) for x in indexes if not model.fileInfo(x).isDir()]
-        self.current_sender = None
+        for f in fileslist:
+            log.debug('selected file:\t{}'.format(f))
+        # self.current_sender = None
         return fileslist
 
     def submit_clicked(self):
@@ -454,13 +461,14 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         if not filename:
             for f in self.fileslist:
                 # забираем из БД самую последнюю версию файла
-                if not ver:
-                    __, __, f = self.synchro.splitter(f)
+                # if not ver:
+                __, __, f = self.synchro.splitter(f)
 
-                    f = f.replace('\\', '/')
-                    request_data = "SELECT version FROM assets WHERE assets.file='{}'".format(f)
-                    ver = self.db.read_data(request_data)[0]
+                f = f.replace('\\', '/')
+                request_data = "SELECT version FROM assets WHERE assets.file='{}'".format(f)
+                ver = self.db.read_data(request_data)[0]
 
+                log.debug('geting file: {}\t version: {}'.format(f, ver))
                 self.db.get_version(f, author, ver)
             # обнуляем список выбранных файлов
             self.fileslist = []

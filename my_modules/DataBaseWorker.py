@@ -2,6 +2,8 @@
 import sqlite3
 from elFrosher.my_modules.synchro import Synchronizer
 from os.path import normpath
+import logging
+log = logging.getLogger('elFrosher')
 
 class DatabaseWorker:
     def __init__(self, db_filename):
@@ -14,6 +16,8 @@ class DatabaseWorker:
         with sqlite3.connect(self.db_file) as db:
             cursor = db.cursor()
             cursor.execute(data)
+            log.debug('>>\n')
+            log.debug('record to db:\n\r{}\n\r'.format(data))
             db.commit()
             cursor.close()
 
@@ -157,11 +161,11 @@ values ((select id from assets where file = '{file}'), 4,
         # print('\nget_version: ', filename)
         self.synchro.sync_file(filename, version)
 
+        log.debug('db: copy this file: {}'.format(filename))
         # сначала делаем апдейт в таблице local_version, если записи нет запрос проигнорируется
         text = """UPDATE local_version SET version='{0}'
 WHERE user_id=(select id from users where login='{1}')
 AND asset_id=(SELECT assets.id FROM assets WHERE file = '{2}')""".format(version, author, filename)
-        # print(text)
         self.write_data(text)
 
         # теперь вставляем запись local_version, если запись уже есть, то запрос проигнорируется
@@ -169,6 +173,7 @@ AND asset_id=(SELECT assets.id FROM assets WHERE file = '{2}')""".format(version
 VALUES ((select id from users where login='{}'), (SELECT assets.id FROM assets WHERE file = '{}'),
 '{}')""".format(author, filename, version)
         self.write_data(text)
+        log.info('UPDATE LOCAL VERSION')
 
     def multiple_assets_records(self, assetlist, author, status=1, comment=None):
             """ создаем общий пендинл лист для выбранных ассетов """
