@@ -33,7 +33,7 @@ ASSET_STRUCTURE = [
     'data/obj'
 ]
 # BOOKMARKS_DEFAULT =['characters', 'objects','locations']
-BOOKMARKS_DEFAULT ={
+BOOKMARKS_DEFAULT = {
         'characters': CHARACTERS,
         'objects': PROPS,
         'locations': LOCS

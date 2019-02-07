@@ -4,6 +4,8 @@ from PySide2 import QtWidgets, QtCore
 from os.path import dirname, normpath, join, split, getsize
 from elFrosher.my_modules import config_frosher
 from shutil import copy2
+import logging
+log = logging.getLogger('elFrosher')
 
 
 class Synchronizer(object):
@@ -60,7 +62,8 @@ class Synchronizer(object):
         source, destination, versions = self.path_corrector(this_file, ver)
         # print('versions <<< ', versions)
         current_path = split(destination)[0]
-        print('\n\rcopyng: ', source, 'to: >> ', current_path, '\n\r')
+        # print('\n\rcopyng: ', source, 'to: >> ', current_path, '\n\r')
+        log
         if not os.path.exists(current_path):
             os.makedirs(current_path)
         copy2(source, destination)

@@ -3,16 +3,14 @@ from PySide2 import QtCore, QtWidgets, QtGui
 from os.path import dirname, join, normpath, normcase, getsize, split, exists
 import sys, os
 import logging
+from elFrosher.my_modules import config_frosher
+from elFrosher.my_modules.el_logger import ElLogger
 
-log = logging.getLogger('elFrosher')
-log.setLevel(logging.DEBUG)
-setfile = normpath(join(dirname(__file__), 'myLog.txt'))
-fh = logging.FileHandler(setfile, mode='w')
-# fh = logging.FileHandler(setfile)
-# formatter = logging.Formatter(u'%(lineno): %(func) - %(levelname)-8s\t[%(asctime)s]\t%(message)s')
-formatter = logging.Formatter(u'%(levelname)-8s | %(lineno)-3d | %(module)-25s |\t[%(asctime)s] |\t%(message)s')
-fh.setFormatter(formatter)
-log.addHandler(fh)
+log_file = normpath(join(split(config_frosher.SERVER)[0], 'log_{}.txt'.format(config_frosher.user)))
+logger_name = __name__
+elloger = ElLogger(logger_name, log_file)
+log = elloger.log
+print('< logger name > ', logger_name)
 
 from elFrosher.my_modules.asset_creator import AssetCreator
 
@@ -39,8 +37,6 @@ except NameError:
     import importlib
     importlib.reload(models)
 from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
-
-from elFrosher.my_modules import config_frosher
 
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
@@ -458,13 +454,13 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         """если не указан файл значит юзер сделал запрос из дерева, тогда просто вызываем файлколлектор
             и обновляем список выбранных ассетов до последних версий"""
-        if not filename:
+        if not filename and not ver:
             for f in self.fileslist:
-                # забираем из БД самую последнюю версию файла
-                # if not ver:
+                # конвертируем путь
                 __, __, f = self.synchro.splitter(f)
 
                 f = f.replace('\\', '/')
+                # забираем из БД самую последнюю версию файла
                 request_data = "SELECT version FROM assets WHERE assets.file='{}'".format(f)
                 ver = self.db.read_data(request_data)[0]
 
@@ -472,7 +468,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
                 self.db.get_version(f, author, ver)
             # обнуляем список выбранных файлов
             self.fileslist = []
-        else:
+        elif filename and ver:
             # из таблицы можно выбрать только одну версию
             self.db.get_version(filename, author, ver)
 

@@ -10,14 +10,15 @@ class DatabaseWorker:
         self.db_file = db_filename
         self.synchro = Synchronizer()
         self.project_root = None
-        print('DatabaseWorker init... ', self.db_file)
+        log.info('DatabaseWorker init... {}'.format(self.db_file))
 
     def write_data(self, data):
         with sqlite3.connect(self.db_file) as db:
             cursor = db.cursor()
             cursor.execute(data)
-            log.debug('>>\n')
-            log.debug('record to db:\n\r{}\n\r'.format(data))
+            log.debug(u'\tначало записи\n\r')
+            log.debug('record to db: {}\n\r'.format(data))
+            log.debug(u'\tконец записи\n\r')
             db.commit()
             cursor.close()
 
@@ -115,7 +116,8 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
             # сначала удостоверимся что у юзера финальная версия файла
             if res:
                 asset_id, file_path, version, local_version, is_checkout, editor = res
-                print('\n\r', is_checkout, '\t', editor, '\t', user)
+                log.debug('is checkout: {}\t editor: {}\t user: {}'.format(is_checkout, editor, user))
+                # print('\n\r', is_checkout, '\t', editor, '\t', user)
                 if is_checkout:
                     if editor != user:
                         print(u'файл в работе у ', editor)
@@ -136,8 +138,8 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
                     print(u'сначала файл надо себе скопировать')
                     continue
                 else:
-                    print('checkout ', checkout)
-
+                    # print('checkout ', checkout)
+                    log.info('checkout {}\n\r'.format(checkout))
                     # вношу в таблицу checkout автора и ИД ассета
                     # статус ИД для чекаута - 4
                     text = """insert into checkout (asset_id, status_id, user_id)
@@ -146,7 +148,7 @@ values ((select id from assets where file = '{file}'), 4,
                     # print('\n', text, '\n\r', editor, '\t', user)
                     self.write_data(text)
 
-                    res = self.get_status(user, file)
+                    # res = self.get_status(user, file)
                     # print('берем в работу или снимаем статус чекаут.\n\r\rпроверка из базы ', res)
             else:
                 skippedfiles.append(f)
@@ -192,7 +194,7 @@ VALUES ((select id from users where login='{}'), (SELECT assets.id FROM assets W
             else:
                 # comment = comment.decode('utf-8')
                 print('comment nodecode: {}'.format(comment))
-                print('comment decode: {}'.format(comment.encode('cp1251')))
+                # print('comment decode: {}'.format(comment.encode('cp1251')))
 
             ''' теперь надо обработать список выделеных файлов '''
             'сначала добавляем список файлов по таблицам asset и pending'
@@ -230,7 +232,8 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     if local_version != version:
                         # если версии не совпадают файл пропускаем
                         skipped_files.append(filepath)
-                        print(u'пропуск: >> \t', filepath)
+                        log.info('skipped>> local_version != version: {}'.format(filepath))
+                        # print(u'пропуск: >> \t', filepath)
                         continue
                     elif checkout and editor != author:
                         # если висит статус чекаут, сверяемся совпадают ли автор запроса и редактор, при несовпадении
@@ -238,11 +241,14 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                         # print('file: {} checkout: {}\teditor: {}\tauthor: {}'.format(srv_path, checkout, editor, author))
                         # status = None
                         skipped_files.append(filepath)
+                        log.info('skipped>> checkout and editor != author: {}'.format(filepath))
                         continue
                     elif checkout and editor == author:
                         # редактор и автор запроса совпадают, при сабмите снимаем статус checkout
                         status = 1
-                        print(u'checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
+                        log.info('checkout detect, editor : {} | author : {}, switch status on : {}'.format(
+                            editor, author, status))
+                        # print(u'checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
 
                     # файл прошел все проверки и уже есть запись в базе, добавляем 1 к номеру версии
                     version = int(version) + 1
@@ -251,7 +257,8 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
 
                     # заливаем файло на сервак, вписываем итерируемый объект, с локальным путем, так как
                     # synchro определяет направление копирования исходя из поданого пути
-                    print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                    log.info(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                    # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
                     self.synchro.sync_file(file, version)
                     # print(text)
 
