@@ -3,7 +3,7 @@
 # Form implementation generated from reading ui file 'C:\DEV\elFrosh_repo\elFrosher\UI\create_asset_form.ui',
 # licensing of 'C:\DEV\elFrosh_repo\elFrosher\UI\create_asset_form.ui' applies.
 #
-# Created: Mon Feb  4 18:21:17 2019
+# Created: Fri Feb  8 18:44:30 2019
 #      by: pyside2-uic  running on PySide2 5.11.1
 #
 # WARNING! All changes made in this file will be lost!

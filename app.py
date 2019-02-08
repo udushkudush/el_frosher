@@ -1,16 +1,15 @@
 # -*- coding: utf-8 -*-
 from PySide2 import QtCore, QtWidgets, QtGui
 from os.path import dirname, join, normpath, normcase, getsize, split, exists
-import sys, os
+import sys, os, json
 import logging
 from elFrosher.my_modules import config_frosher
 from elFrosher.my_modules.el_logger import ElLogger
 
 log_file = normpath(join(split(config_frosher.SERVER)[0], 'log_{}.txt'.format(config_frosher.user)))
-logger_name = __name__
+logger_name = 'elFrosher'
 elloger = ElLogger(logger_name, log_file)
 log = elloger.log
-print('< logger name > ', logger_name)
 
 from elFrosher.my_modules.asset_creator import AssetCreator
 
@@ -41,31 +40,45 @@ from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetail
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
-from elFrosher.UI.settings import Ui_edit_settings as edit_settings
+from elFrosher.UI.logon_ui import Ui_login as login_dialog
 
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
-
-    # __DATABASE = normpath(join(config_frosher.SERVER, 'db', 'el_frosher.db'))
     __DATABASE = config_frosher.DB_FILE
     asset_form, submit_form = '', ''
     directory, server = '', ''
 
-    project_root = normpath(config_frosher.PROJECT)
+    # project_root = normpath(config_frosher.PROJECT)
+    project_root = None
     server_root = normpath(config_frosher.SERVER)
     versions = normpath(config_frosher.VERSIONS)
 
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
         log.info('init my app...')
-        log.info('project root: {}'.format(self.project_root))
-        # self.pb = MyProgressBar(self)
-        # self.pb.setGeometry(QtCore.QRect(500, 150, 275, 64))
-        # self.pb.show()
-        self.synchro = Synchronizer()
+
+        self.logon_ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
+        self.login = LoginDialog()
+        self.login.ticket = self.logon_ticket
+
+        log.info('local setting init')
         self.db = DatabaseWorker(self.__DATABASE)
+
+        if not os.path.exists(self.logon_ticket):
+            log.info(self.logon_ticket)
+            self.login.set_users(self.db.get_users())
+            self.login.show()
+        else:
+            self.show()
+
+        # todo блять надо исправить чтобы код не выполнялся пока не создастся файл локальных настроек
+        self.local_settings = self.read_local_settings()
+
+        log.info('read local ticket: {}'.format(self.local_settings))
+        self.project_root = self.local_settings.get('workspace', 'SHIT')
+        self.synchro = Synchronizer()
         self.db.project_root = self.project_root
         self.fileslist = []
         self.table_model = ''
@@ -99,6 +112,11 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # переменныю для таблиц
         # self.init_table()
 
+    def read_local_settings(self):
+        with open(self.logon_ticket, 'r') as f:
+            x = json.load(f)
+        return x
+
     def buttons(self):
         self.ui.get_version.setText('')
         self.ui.get_version.setIcon(self.ico_download.scaledToHeight(32, QtCore.Qt.SmoothTransformation))
@@ -119,7 +137,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.create_asset.setText('')
         self.ui.create_asset.setIcon(self.ico_folder)
         self.ui.create_asset.setIconSize(QtCore.QSize(32, 32))
-        self.ui.user_name.setText(config_frosher.user)
+        self.ui.user_name.setText(self.local_settings.get('user'))
 
     def setup_all_ui(self):
         # ---- DIALOGS ----- #
@@ -128,8 +146,8 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.submit_form.hide()
         self.asset_form.hide()
         # ---- splitters ---- #
-        self.ui.horizontal_left_splitter.setSizes([150, 350])
-        self.ui.vertical_splitter.setSizes([250, 300])
+        self.ui.horizontal_left_splitter.setSizes([75, 450])
+        self.ui.vertical_splitter.setSizes([350, 300])
 
         # ---- TREE VIEW ----- #
         self.directory = ServerTreeModel()
@@ -229,7 +247,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # self.ui.details_table.model()  #dataChanged(lambda x: print('--data is changed--'))
 
     def updater_tree_model(self, model, model_root):
-        dicty = self.db.get_dict(config_frosher.user)
+        dicty = self.db.get_dict(self.local_settings.get('user'))
         model.update(dicty, model_root)
 
     def update_tree_views(self, view, model, model_root):
@@ -431,7 +449,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         print('capture comment ', comment)
         if comment:
             comment = comment
-        author = config_frosher.user
+        author = self.local_settings.get('user')
         # собираем список файлов чтобы оформить пакет для отправки в БД
         if len(self.fileslist) > 0:
             ' отправляем сразу весь список файлов в БД '
@@ -450,7 +468,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def get_version(self, filename=None, ver=None):
         """нужно получить путь к файлу и номер версии который мы хотим залить на локал"""
-        author = config_frosher.user
+        author = self.local_settings.get('user')
 
         """если не указан файл значит юзер сделал запрос из дерева, тогда просто вызываем файлколлектор
             и обновляем список выбранных ассетов до последних версий"""
@@ -488,7 +506,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             print('servachok')
 
         self.fileslist = self.file_collector(self.current_sender)
-        self.db.change_status(self.fileslist, config_frosher.user)
+        self.db.change_status(self.fileslist, self.local_settings.get('user'))
         self.fileslist = []
 
         self.update_tree_views(self.ui.project_tree, self.directory, self.project_root)
@@ -524,7 +542,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             style = f.read()
         self.setStyleSheet(style)
         self.setWindowTitle("eL` Frosher")
-        self.setGeometry(QtCore.QRect(420, 55, 850, 520))
+        self.setGeometry(QtCore.QRect(420, 55, 1200, 520))
 
 
 class SubmitDialog(QtWidgets.QDialog):
@@ -541,12 +559,53 @@ class CreateAssetDialog(QtWidgets.QWidget):
         self.dialog.setupUi(self)
 
 
-class EditSettingsDialog(QtWidgets.QWidget):
-    def __init__(self, parent):
-        super(EditSettingsDialog, self).__init__(parent)
-        self.dialog = edit_settings()
+class LoginDialog(QtWidgets.QDialog):
+    def __init__(self, *args):
+        super(LoginDialog, self).__init__(*args)
+        self.dialog = login_dialog()
         self.dialog.setupUi(self)
-        __setings = join(split(dirname(__file__)), 'settings.ini')
+        self.ui = self.dialog
+        self.ui.confirm.clicked.connect(self.create_xui)
+        self.ticket = None
+        self.users = []
+
+        # создаем комплитер
+        completer = QtWidgets.QCompleter()
+
+        # создает стринговую модель
+        try:
+            self.model = QtCore.QStringListModel()
+        except AttributeError:
+            self.model = QtGui.QStringListModel()
+        self.ui.user_name.setModel(self.model)
+        # соединяем стринг модель с комплитером
+        completer.setModel(self.model)
+        x = self.ui.user_name.completer()
+        log.debug(x)
+
+    def create_xui(self):
+        log.info('creating ticket...')
+        fuck = {}
+        fuck['user_name'] = self.ui.user_name.currentText()
+        fuck['password'] = self.ui.password.text()
+        fuck['workspace'] = self.ui.workspace.text()
+
+        with open(self.ticket, 'w') as f:
+            json.dump(fuck, f, sort_keys=True, indent=4, ensure_ascii=False)
+        log.info(self.ticket)
+        self.hide()
+        win = SomeFuckingShit()
+        win.show()
+
+    def set_users(self, users):
+        x = [x[0] for x in users]
+        # кидаем в переменную всех юзеров
+        self.users = x
+        # закидываем список в стринг модель
+        self.model.setStringList(self.users)
+        log.info(x)
+
+
 
 
 class MyProgressBar(QtWidgets.QWidget):
@@ -584,5 +643,4 @@ class MyProgressBar(QtWidgets.QWidget):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     win = SomeFuckingShit()
-    win.show()
     sys.exit(app.exec_())

@@ -5,12 +5,17 @@ from os.path import normpath
 import logging
 log = logging.getLogger('elFrosher')
 
+
 class DatabaseWorker:
     def __init__(self, db_filename):
         self.db_file = db_filename
         self.synchro = Synchronizer()
         self.project_root = None
         log.info('DatabaseWorker init... {}'.format(self.db_file))
+
+    def get_users(self):
+        text = "SELECT login FROM users"
+        return self.read_data(text, single=False)
 
     def write_data(self, data):
         with sqlite3.connect(self.db_file) as db:
@@ -231,8 +236,8 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     # тогда сверяем версии, и далее проверяем не висит ли на нем статус в работе'
                     if local_version != version:
                         # если версии не совпадают файл пропускаем
-                        skipped_files.append(filepath)
-                        log.info('skipped>> local_version != version: {}'.format(filepath))
+                        skipped_files.append('skipped>> local_version != version: {}'.format(filepath))
+                        # log.info('skipped>> local_version != version: {}'.format(filepath))
                         # print(u'пропуск: >> \t', filepath)
                         continue
                     elif checkout and editor != author:
@@ -240,8 +245,8 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                         # - пропускаем файл и меняем статус с 1 на None
                         # print('file: {} checkout: {}\teditor: {}\tauthor: {}'.format(srv_path, checkout, editor, author))
                         # status = None
-                        skipped_files.append(filepath)
-                        log.info('skipped>> checkout and editor != author: {}'.format(filepath))
+                        skipped_files.append('skipped>> checkout and editor != author: {}'.format(filepath))
+                        # log.info('skipped>> checkout and editor != author: {}'.format(filepath))
                         continue
                     elif checkout and editor == author:
                         # редактор и автор запроса совпадают, при сабмите снимаем статус checkout
@@ -308,7 +313,8 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
                     self.write_data(text)
 
                     # заливаем файло на сервак
-                    print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                    log.info('copy to server: {}\t- version: {}'.format(file, version))
+                    # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
                     self.synchro.sync_file(file, version)
 
                     # заводим статус в чекаут
@@ -327,19 +333,22 @@ FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
             # todo если файл в списке один и он пропущен то пендинг создается, надо разрулить этот момент
             if skipped_files:
                 if len(assetlist) == len(skipped_files):
-                    print(u'нет добавляемых файлов')
+                    log.info('нет добавляемых файлов')
+                    # print(u'нет добавляемых файлов')
             else:
                 text = """INSERT INTO info (pending_id, author_id, comment, date)
 VALUES ('{}', (SELECT id FROM users WHERE login= '{}'), '{}', datetime("now", "localtime"))""".format(
                     pending_list, author, comment)
-                print(text)
+                log.info(text)
                 self.write_data(text)
 
             # выводим список пропущенных файлов
             if skipped_files:
-                print(u'\n\n\nпропущенные файлы: ')
+                log.info('пропущенные файлы:\n\n\n')
+                # print(u'\n\n\nпропущенные файлы: ')
                 for s in skipped_files:
-                    print('skip: > {}'.format(s))
+                    log.info(s)
+                    # print('skip: > {}'.format(s))
 
     def create_tables(self):
         # функция быстро создает все нужные таблицы со связями
