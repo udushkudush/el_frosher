@@ -1,8 +1,9 @@
 # -*- coding: utf-8 -*-
 from PySide2 import QtCore, QtWidgets, QtGui
 from os.path import dirname, join, normpath, normcase, getsize, split, exists
-import sys, os, json
-import logging
+import sys
+import os
+import json
 from elFrosher.my_modules import config_frosher
 from elFrosher.my_modules.el_logger import ElLogger
 
@@ -11,37 +12,24 @@ logger_name = 'elFrosher'
 elloger = ElLogger(logger_name, log_file)
 log = elloger.log
 
-from elFrosher.my_modules.asset_creator import AssetCreator
-
+reload = getattr(__import__('importlib'), 'reload', 'reload')
 import elFrosher.my_modules.DataBaseWorker as DB_Worker
-try:
-    reload(DB_Worker)
-except NameError:
-    import importlib
-    importlib.reload(DB_Worker)
-from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
-
 import elFrosher.my_modules.synchro as synchro
-try:
-    reload(synchro)
-except NameError:
-    import importlib
-    importlib.reload(synchro)
-from elFrosher.my_modules.synchro import Synchronizer
-
 import elFrosher.models.models as models
-try:
-    reload(models)
-except NameError:
-    import importlib
-    importlib.reload(models)
+
+reload(models)
+reload(DB_Worker)
+reload(synchro)
+
+from elFrosher.my_modules.asset_creator import AssetCreator
+from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
+from elFrosher.my_modules.synchro import Synchronizer
 from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
 
 from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
 from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
 from elFrosher.UI.logon_ui import Ui_login as login_dialog
-
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
@@ -65,6 +53,19 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         log.info('local setting init')
         self.db = DatabaseWorker(self.__DATABASE)
+        self.synchro = Synchronizer()
+        self.fileslist = []
+        self.table_model = ''
+        self.table_details_model = ''
+        self.current_sender = None
+        self.ui = myFuckingWindow()
+        self.ui.setupUi(self)
+        self.local_settings = None
+        self.ico_download = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow_down.png')))
+        self.ico_check = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'check.png')))
+        self.ico_increment = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'incremental.png')))
+        self.ico_submit = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow-up.png')))
+        self.ico_folder = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'folder.png')))
 
         if not os.path.exists(self.logon_ticket):
             log.info(self.logon_ticket)
@@ -72,27 +73,16 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             self.login.show()
         else:
             self.show()
+            self.accept_logon()
 
         # todo блять надо исправить чтобы код не выполнялся пока не создастся файл локальных настроек
-        self.local_settings = self.read_local_settings()
 
+    def accept_logon(self):
+        self.local_settings = self.read_local_settings()
         log.info('read local ticket: {}'.format(self.local_settings))
         self.project_root = self.local_settings.get('workspace', 'SHIT')
-        self.synchro = Synchronizer()
+        os.environ['FROSH'] = self.local_settings.get('workspace', 'SHIT')
         self.db.project_root = self.project_root
-        self.fileslist = []
-        self.table_model = ''
-        self.table_details_model = ''
-        self.current_sender = None
-        self.ui = myFuckingWindow()
-        self.ui.setupUi(self)
-
-        self.ico_download = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow_down.png')))
-        self.ico_check = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'check.png')))
-        self.ico_increment = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'incremental.png')))
-        self.ico_submit = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow-up.png')))
-        self.ico_folder = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'folder.png')))
-
         self.buttons()
         self.setup_all_ui()
         self.set_main_style()
@@ -137,7 +127,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.create_asset.setText('')
         self.ui.create_asset.setIcon(self.ico_folder)
         self.ui.create_asset.setIconSize(QtCore.QSize(32, 32))
-        self.ui.user_name.setText(self.local_settings.get('user'))
+        self.ui.user_name.setText(self.local_settings.get('user_name'))
 
     def setup_all_ui(self):
         # ---- DIALOGS ----- #
@@ -206,7 +196,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         pending.horizontalHeader().setSectionResizeMode(1, QtWidgets.QHeaderView.Stretch)
         # pending.horizontalHeader().resizeContentPrecision(5)
 
-
         details.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectRows)
         details.setSelectionMode(QtWidgets.QAbstractItemView.SingleSelection)
         details.verticalHeader().hide()
@@ -247,7 +236,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         # self.ui.details_table.model()  #dataChanged(lambda x: print('--data is changed--'))
 
     def updater_tree_model(self, model, model_root):
-        dicty = self.db.get_dict(self.local_settings.get('user'))
+        dicty = self.db.get_dict(self.local_settings.get('user_name'))
         model.update(dicty, model_root)
 
     def update_tree_views(self, view, model, model_root):
@@ -449,7 +438,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         print('capture comment ', comment)
         if comment:
             comment = comment
-        author = self.local_settings.get('user')
+        author = self.local_settings.get('user_name')
         # собираем список файлов чтобы оформить пакет для отправки в БД
         if len(self.fileslist) > 0:
             ' отправляем сразу весь список файлов в БД '
@@ -468,7 +457,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
     def get_version(self, filename=None, ver=None):
         """нужно получить путь к файлу и номер версии который мы хотим залить на локал"""
-        author = self.local_settings.get('user')
+        author = self.local_settings.get('user_name')
 
         """если не указан файл значит юзер сделал запрос из дерева, тогда просто вызываем файлколлектор
             и обновляем список выбранных ассетов до последних версий"""
@@ -506,7 +495,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             print('servachok')
 
         self.fileslist = self.file_collector(self.current_sender)
-        self.db.change_status(self.fileslist, self.local_settings.get('user'))
+        self.db.change_status(self.fileslist, self.local_settings.get('user_name'))
         self.fileslist = []
 
         self.update_tree_views(self.ui.project_tree, self.directory, self.project_root)
@@ -585,16 +574,16 @@ class LoginDialog(QtWidgets.QDialog):
 
     def create_xui(self):
         log.info('creating ticket...')
-        fuck = {}
-        fuck['user_name'] = self.ui.user_name.currentText()
-        fuck['password'] = self.ui.password.text()
-        fuck['workspace'] = self.ui.workspace.text()
+        fuck = {'user_name': self.ui.user_name.currentText(),
+                'password': self.ui.password.text(),
+                'workspace': self.ui.workspace.text()}
 
         with open(self.ticket, 'w') as f:
             json.dump(fuck, f, sort_keys=True, indent=4, ensure_ascii=False)
         log.info(self.ticket)
         self.hide()
         win = SomeFuckingShit()
+        win.accept_logon()
         win.show()
 
     def set_users(self, users):
@@ -604,8 +593,6 @@ class LoginDialog(QtWidgets.QDialog):
         # закидываем список в стринг модель
         self.model.setStringList(self.users)
         log.info(x)
-
-
 
 
 class MyProgressBar(QtWidgets.QWidget):
@@ -622,7 +609,7 @@ class MyProgressBar(QtWidgets.QWidget):
     def progress(self, file_source, file_destination):
         size_src = float(getsize(file_source))
         size_dst = float(getsize(file_destination))
-        percentage = int(size_dst/size_src*100)
+        percentage = int(size_dst / size_src * 100)
         try:
             self.my_pb.setValue(percentage)
         except:
@@ -633,11 +620,10 @@ class MyProgressBar(QtWidgets.QWidget):
     def copydone(self, file_source, file_destination, copied):
         self.my_pb.setValue(100)
 
-    def copyfileobj(self, file_source, file_destination, callback_progress, callback_copydone, length=16*1024):
+    def copyfileobj(self, file_source, file_destination, callback_progress, callback_copydone, length=16 * 1024):
 
         while True:
             pass
-
 
 
 if __name__ == '__main__':
