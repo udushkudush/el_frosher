@@ -10,7 +10,9 @@ class ElLogger(object):
         self.log.setLevel(logging.DEBUG)
 
         fh = logging.FileHandler(file, mode='w', encoding='utf-8')
-        formatter = logging.Formatter(u'%(levelname)-8s | %(lineno)-3d | %(module)-18s | [%(asctime)s] | %(message)s')
+        formatter = logging.Formatter(u'%(levelname)-8s | %(lineno)-3d | %(module)-18s | %(funcName)s | [%(asctime)s] | %(message)s')
         fh.setFormatter(formatter)
         self.log.addHandler(fh)
 
+    def set_name(self, name):
+        self.log.name = name

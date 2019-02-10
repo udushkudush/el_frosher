@@ -1,47 +1,36 @@
 # -*- coding: utf-8 -*-
 from PySide2 import QtCore, QtWidgets, QtGui
+from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
+from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
+from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
+from elFrosher.UI.logon_ui import Ui_Login as login_dialog
+
+reload = getattr(__import__('importlib'), 'reload', 'reload')
+import elFrosher.my_modules.DataBaseWorker as DB_Worker
+reload(DB_Worker)
+from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
+
 from os.path import dirname, join, normpath, normcase, getsize, split, exists
 import sys
 import os
 import json
-from elFrosher.my_modules import config_frosher
 from elFrosher.my_modules.el_logger import ElLogger
 
-log_file = normpath(join(split(config_frosher.SERVER)[0], 'log_{}.txt'.format(config_frosher.user)))
+tmp_log_path = r'C:\Users\Olga\Dropbox\inDaHouse\repo'
+log_file = normpath(join(tmp_log_path, 'log_{}.txt'.format('shshsh')))
 logger_name = 'elFrosher'
 elloger = ElLogger(logger_name, log_file)
 log = elloger.log
 
-reload = getattr(__import__('importlib'), 'reload', 'reload')
-import elFrosher.my_modules.DataBaseWorker as DB_Worker
-import elFrosher.my_modules.synchro as synchro
-import elFrosher.models.models as models
-
-reload(models)
-reload(DB_Worker)
-reload(synchro)
-
-from elFrosher.my_modules.asset_creator import AssetCreator
-from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
-from elFrosher.my_modules.synchro import Synchronizer
-from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
-
-from elFrosher.UI.main_window import Ui_MainWindow as myFuckingWindow
-from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
-from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
-from elFrosher.UI.logon_ui import Ui_login as login_dialog
-
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
-    __DATABASE = config_frosher.DB_FILE
+    _DATABASE = None
     asset_form, submit_form = '', ''
     directory, server = '', ''
-
-    # project_root = normpath(config_frosher.PROJECT)
     project_root = None
-    server_root = normpath(config_frosher.SERVER)
-    versions = normpath(config_frosher.VERSIONS)
+    server_root = None
+    versions = None
 
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
@@ -52,9 +41,9 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.login.ticket = self.logon_ticket
 
         log.info('local setting init')
-        self.db = DatabaseWorker(self.__DATABASE)
-        self.synchro = Synchronizer()
         self.fileslist = []
+        self.db = DatabaseWorker()
+        self.synchro = None
         self.table_model = ''
         self.table_details_model = ''
         self.current_sender = None
@@ -69,20 +58,23 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         if not os.path.exists(self.logon_ticket):
             log.info(self.logon_ticket)
-            self.login.set_users(self.db.get_users())
+            # self.login.set_users(self.db.get_users())
             self.login.show()
         else:
             self.show()
             self.accept_logon()
 
-        # todo блять надо исправить чтобы код не выполнялся пока не создастся файл локальных настроек
-
     def accept_logon(self):
         self.local_settings = self.read_local_settings()
+        from elFrosher.my_modules import config_frosher
+
         log.info('read local ticket: {}'.format(self.local_settings))
         self.project_root = self.local_settings.get('workspace', 'SHIT')
         os.environ['FROSH'] = self.local_settings.get('workspace', 'SHIT')
-        self.db.project_root = self.project_root
+
+        # self._DATABASE
+
+        self.server_root = config_frosher.SERVER
         self.buttons()
         self.setup_all_ui()
         self.set_main_style()
@@ -130,6 +122,17 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.user_name.setText(self.local_settings.get('user_name'))
 
     def setup_all_ui(self):
+        import elFrosher.my_modules.synchro as synchro
+        import elFrosher.models.models as models
+        reload(models)
+        reload(synchro)
+        from elFrosher.my_modules.asset_creator import AssetCreator
+        from elFrosher.my_modules.synchro import Synchronizer
+        from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
+
+        self.synchro = Synchronizer()
+
+        self.db.project_root = self.project_root
         # ---- DIALOGS ----- #
         self.submit_form = SubmitDialog(self)
         self.asset_form = CreateAssetDialog(self)
@@ -141,10 +144,11 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         # ---- TREE VIEW ----- #
         self.directory = ServerTreeModel()
+        self.directory.setpath(self.project_root)
         self.server = ServerTreeModel()
+        self.server.setpath(self.server_root)
 
         self.updater_tree_model(self.directory, self.project_root)
-        self.directory.setpath(self.project_root)
         # ----- set project dir in tree view ----- #
         main_tree = self.ui.project_tree
         main_tree.setModel(self.directory)
@@ -161,7 +165,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         server_tree = self.ui.server_tree
         # self.server.update(dicty, self.server_root)
         self.updater_tree_model(self.server, self.server_root)
-        self.server.setpath(self.server_root)
         server_tree.setModel(self.server)
         server_tree.setRootIndex(self.server.index(self.server_root))
         server_tree.setColumnHidden(1, True)
@@ -554,29 +557,43 @@ class LoginDialog(QtWidgets.QDialog):
         self.dialog = login_dialog()
         self.dialog.setupUi(self)
         self.ui = self.dialog
-        self.ui.confirm.clicked.connect(self.create_xui)
+        self.ui.accept.clicked.connect(self.create_xui)
+        # self.ui.server.textChanged.connect(self.connect_to_server)
+        self.ui.srv_connect.clicked.connect(self.connect_to_server)
         self.ticket = None
         self.users = []
+        self.mainApp = SomeFuckingShit()
+        try:
+            text = os.getenv('FROSH_SERVER')
+            self.ui.server.setText(text)
+        except Exception as e:
+            log.debug('env FROSH_SERVER not exists : exception - {}'.format(e))
 
         # создаем комплитер
-        completer = QtWidgets.QCompleter()
+        # completer = QtWidgets.QCompleter()
 
         # создает стринговую модель
         try:
             self.model = QtCore.QStringListModel()
         except AttributeError:
             self.model = QtGui.QStringListModel()
-        self.ui.user_name.setModel(self.model)
+        self.ui.user.setModel(self.model)
         # соединяем стринг модель с комплитером
-        completer.setModel(self.model)
-        x = self.ui.user_name.completer()
-        log.debug(x)
+        # completer.setModel(self.model)
+
+    def connect_to_server(self):
+        os.environ['FROSH_SERVER'] = self.ui.server.text().lower()
+        _srv = os.getenv('FROSH_SERVER')
+        self.mainApp._DATABASE = join(split(_srv)[0], 'db', 'el_frosher.db')
+        self.mainApp.db.set_data_base(join(split(_srv)[0], 'db', 'el_frosher.db'))
+        self.set_users(self.mainApp.db.get_users())
 
     def create_xui(self):
         log.info('creating ticket...')
-        fuck = {'user_name': self.ui.user_name.currentText(),
+        fuck = {'user_name': self.ui.user.currentText(),
                 'password': self.ui.password.text(),
-                'workspace': self.ui.workspace.text()}
+                'workspace': self.ui.workspace.text(),
+                'server': self.ui.server.text()}
 
         with open(self.ticket, 'w') as f:
             json.dump(fuck, f, sort_keys=True, indent=4, ensure_ascii=False)

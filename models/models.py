@@ -2,6 +2,8 @@
 from PySide2 import QtWidgets
 from PySide2.QtCore import QDir, Qt, QAbstractTableModel
 from PySide2.QtGui import QColor, QPixmap
+import logging
+log = logging.getLogger('elFrosher')
 from elFrosher.my_modules import config_frosher
 from os.path import normpath, join, dirname
 
@@ -42,13 +44,14 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
 
     def setpath(self, path):
         _idx = self.setRootPath(path)
-        print('setting path: ', path)
+        log.info('setting path: {}'.format(path))
 
     def update(self, items_data, root_path):
         self.beginResetModel()
         # print(u'получил словарь >> ', items_data)
         self._itemsdata = items_data
         self._root_project = root_path
+        log.info('_root_project: {}'.format(self._root_project))
         self.endResetModel()
 
     def data(self, index, role):

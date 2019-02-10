@@ -2,7 +2,6 @@
 import os
 from PySide2 import QtWidgets, QtCore
 from os.path import dirname, normpath, join, split, getsize
-from elFrosher.my_modules import config_frosher
 from shutil import copy2
 import logging
 log = logging.getLogger('elFrosher')
@@ -10,11 +9,25 @@ log = logging.getLogger('elFrosher')
 
 class Synchronizer(object):
     def __init__(self):
-        self.project_root = normpath(config_frosher.PROJECT)
-        self.server_root = normpath(config_frosher.SERVER)
-        self.versions = normpath(config_frosher.VERSIONS)
+        # self.project_root = normpath(config_frosher.PROJECT)
+        # self.server_root = normpath(config_frosher.SERVER)
+        # self.versions = normpath(config_frosher.VERSIONS)
+        self.project_root = None
+        self.server_root = None
+        self.versions = None
+        self.setup_pathes()
+        if self.server_root:
+            self.make_server_repoitory()
+
+    def make_server_repoitory(self):
         if not os.path.exists(self.server_root):
             os.makedirs(self.server_root)
+
+    def setup_pathes(self):
+        self.server_root = os.getenv('FROSH_SERVER')
+        self.project_root = os.getenv('FROSH')
+        self.versions = normpath(join(split(self.server_root)[0].lower(), 'versions'))
+        self.make_server_repoitory()
 
     def splitter(self, this_file):
         source_file = normpath(this_file).lower()

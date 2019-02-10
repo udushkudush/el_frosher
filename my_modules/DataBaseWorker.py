@@ -7,11 +7,14 @@ log = logging.getLogger('elFrosher')
 
 
 class DatabaseWorker:
-    def __init__(self, db_filename):
-        self.db_file = db_filename
+    def __init__(self):
+        self.db_file = None
         self.synchro = Synchronizer()
         self.project_root = None
         log.info('DatabaseWorker init... {}'.format(self.db_file))
+
+    def set_data_base(self, db_file):
+        self.db_file = db_file
 
     def get_users(self):
         text = "SELECT login FROM users"
@@ -109,7 +112,7 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
     def change_status(self, filelist, user):
         # функция смены статуса файла, типа взять в работу и все такое
         # работает со списком файлов
-        checkout=True
+        checkout = True
         skippedfiles = []
         for f in filelist:
             # корректируем путь
@@ -125,22 +128,22 @@ FROM assets""".format(sub_request_1=sub1, sub_request_2=sub2)
                 # print('\n\r', is_checkout, '\t', editor, '\t', user)
                 if is_checkout:
                     if editor != user:
-                        print(u'файл в работе у ', editor)
-                        skippedfiles.append(f)
+                        # print(u'файл в работе у ', editor)
+                        skippedfiles.append('файл в работе у {}'.format(f))
                         continue
                     elif editor == user:
                         text = """DELETE FROM checkout WHERE asset_id = '{}' AND user_id = (
                         SELECT users.id FROM users WHERE login = '{}')""".format(asset_id, user)
-                        print(u'хм.. зассал значит редактировать...')
+                        # print(u'хм.. зассал значит редактировать...')
                         self.write_data(text)
 
                 elif int(version) > int(local_version):
-                    skippedfiles.append(f)
-                    print(u'обнови до свежей версии прежде чем брать в работу')
+                    skippedfiles.append('локальная версия устарела {}'.format(f))
+                    # print(u'обнови до свежей версии прежде чем брать в работу')
                     continue
                 elif not local_version:
-                    skippedfiles.append(f)
-                    print(u'сначала файл надо себе скопировать')
+                    skippedfiles.append('файл не синхронизирован {}'.format(f))
+                    # print(u'сначала файл надо себе скопировать')
                     continue
                 else:
                     # print('checkout ', checkout)
@@ -156,8 +159,8 @@ values ((select id from assets where file = '{file}'), 4,
                     # res = self.get_status(user, file)
                     # print('берем в работу или снимаем статус чекаут.\n\r\rпроверка из базы ', res)
             else:
-                skippedfiles.append(f)
-                print(u"на сервере нет такого файла")
+                skippedfiles.append('файла нет на сервере {}'.format(f))
+                # print(u"на сервере нет такого файла")
                 # print('запиь в базе ', res)
 
     def get_version(self, filename, author, version):

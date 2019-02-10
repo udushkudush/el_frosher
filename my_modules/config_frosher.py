@@ -3,21 +3,20 @@ from os import getenv, makedirs
 from os.path import normpath, join, split, exists
 
 # path
+# try:
 PROJECT = getenv('FROSH').lower()
-# SERVER = getenv('FROSH_SERVER').lower()
+SERVER = getenv('FROSH_SERVER').lower()
 
-SERVER = r'O:\Frosh\frosh_depot\project_files'.lower()
+# SERVER = r'O:\Frosh\frosh_depot\project_files'.lower()
 
 VERSIONS = join(split(SERVER)[0].lower(), 'versions')
-DB_FILE = join(split(SERVER)[0], 'db', 'el_frosher.db')
+# DB_FILE = join(split(SERVER)[0], 'db', 'el_frosher.db')
 ASSETS_ROOT = normpath(join(PROJECT, 'assets'))
 CHARACTERS = normpath(join(ASSETS_ROOT, 'chars'))
 PROPS = normpath(join(ASSETS_ROOT, 'obj'))
 LOCS = normpath(join(ASSETS_ROOT, 'locs'))
-
-# print(SERVER, ' ', VERSIONS)
-
-
+# except AttributeError:
+#     print('need reload config')
 # ---- assets types ---- #
 ASSET_TYPES = {
     'character': 'chars',
@@ -32,13 +31,10 @@ ASSET_STRUCTURE = [
     'data/ztl',
     'data/obj'
 ]
-# BOOKMARKS_DEFAULT =['characters', 'objects','locations']
 BOOKMARKS_DEFAULT = {
-        'characters': CHARACTERS,
-        'objects': PROPS,
-        'locations': LOCS
+    'characters': CHARACTERS,
+    'objects': PROPS,
+    'locations': LOCS
 }
-user = 'v.borzenko'
-# user = 'v.verkhozin'
-# user = 'a.polomoshnov'
+
 

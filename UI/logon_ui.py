@@ -1,47 +1,64 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'C:\DEV\elFrosh_repo\elFrosher\UI\settings.ui',
-# licensing of 'C:\DEV\elFrosh_repo\elFrosher\UI\settings.ui' applies.
+# Form implementation generated from reading ui file 'C:\DEV\projects\xueta\elFrosher\UI\logon_UI.ui',
+# licensing of 'C:\DEV\projects\xueta\elFrosher\UI\logon_UI.ui' applies.
 #
-# Created: Fri Feb  8 18:44:30 2019
-#      by: pyside2-uic  running on PySide2 5.11.1
+# Created: Mon Feb 11 00:02:41 2019
+#      by: pyside2-uic  running on PySide2 5.11.0
 #
 # WARNING! All changes made in this file will be lost!
 
 from PySide2 import QtCore, QtGui, QtWidgets
 
-class Ui_login(object):
-    def setupUi(self, login_dialog):
-        login_dialog.setObjectName("login_dialog")
-        login_dialog.resize(151, 150)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(login_dialog.sizePolicy().hasHeightForWidth())
-        login_dialog.setSizePolicy(sizePolicy)
-        login_dialog.setMaximumSize(QtCore.QSize(151, 16777215))
-        self.verticalLayout = QtWidgets.QVBoxLayout(login_dialog)
+class Ui_Login(object):
+    def setupUi(self, Login):
+        Login.setObjectName("Login")
+        Login.resize(325, 153)
+        self.verticalLayout = QtWidgets.QVBoxLayout(Login)
         self.verticalLayout.setObjectName("verticalLayout")
-        self.user_name = QtWidgets.QComboBox(login_dialog)
-        self.user_name.setObjectName("user_name")
-        self.verticalLayout.addWidget(self.user_name)
-        self.password = QtWidgets.QLineEdit(login_dialog)
+        self.horizontalLayout_2 = QtWidgets.QHBoxLayout()
+        self.horizontalLayout_2.setObjectName("horizontalLayout_2")
+        self.server = QtWidgets.QLineEdit(Login)
+        self.server.setObjectName("server")
+        self.horizontalLayout_2.addWidget(self.server)
+        self.srv_connect = QtWidgets.QPushButton(Login)
+        self.srv_connect.setObjectName("srv_connect")
+        self.horizontalLayout_2.addWidget(self.srv_connect)
+        self.horizontalLayout_2.setStretch(0, 2)
+        self.verticalLayout.addLayout(self.horizontalLayout_2)
+        self.horizontalLayout = QtWidgets.QHBoxLayout()
+        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.user = QtWidgets.QComboBox(Login)
+        self.user.setObjectName("user")
+        self.horizontalLayout.addWidget(self.user)
+        self.password = QtWidgets.QLineEdit(Login)
         self.password.setObjectName("password")
-        self.verticalLayout.addWidget(self.password)
-        self.workspace = QtWidgets.QLineEdit(login_dialog)
+        self.horizontalLayout.addWidget(self.password)
+        self.horizontalLayout.setStretch(0, 3)
+        self.horizontalLayout.setStretch(1, 3)
+        self.verticalLayout.addLayout(self.horizontalLayout)
+        self.workspace = QtWidgets.QLineEdit(Login)
         self.workspace.setObjectName("workspace")
         self.verticalLayout.addWidget(self.workspace)
-        self.confirm = QtWidgets.QPushButton(login_dialog)
-        self.confirm.setMinimumSize(QtCore.QSize(0, 36))
-        self.confirm.setObjectName("confirm")
-        self.verticalLayout.addWidget(self.confirm)
+        self.accept = QtWidgets.QPushButton(Login)
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Minimum, QtWidgets.QSizePolicy.Preferred)
+        sizePolicy.setHorizontalStretch(0)
+        sizePolicy.setVerticalStretch(0)
+        sizePolicy.setHeightForWidth(self.accept.sizePolicy().hasHeightForWidth())
+        self.accept.setSizePolicy(sizePolicy)
+        self.accept.setMinimumSize(QtCore.QSize(0, 32))
+        self.accept.setMaximumSize(QtCore.QSize(16777215, 48))
+        self.accept.setObjectName("accept")
+        self.verticalLayout.addWidget(self.accept)
+        self.verticalLayout.setStretch(3, 2)
 
-        self.retranslateUi(login_dialog)
-        QtCore.QMetaObject.connectSlotsByName(login_dialog)
+        self.retranslateUi(Login)
+        QtCore.QMetaObject.connectSlotsByName(Login)
 
-    def retranslateUi(self, login_dialog):
-        login_dialog.setWindowTitle(QtWidgets.QApplication.translate("login_dialog", "Form", None, -1))
-        self.password.setPlaceholderText(QtWidgets.QApplication.translate("login_dialog", "password", None, -1))
-        self.workspace.setPlaceholderText(QtWidgets.QApplication.translate("login_dialog", "workspace", None, -1))
-        self.confirm.setText(QtWidgets.QApplication.translate("login_dialog", "AGA", None, -1))
+    def retranslateUi(self, Login):
+        Login.setWindowTitle(QtWidgets.QApplication.translate("Login", "Dialog", None, -1))
+        self.server.setPlaceholderText(QtWidgets.QApplication.translate("Login", "enter server path", None, -1))
+        self.srv_connect.setText(QtWidgets.QApplication.translate("Login", "cnct", None, -1))
+        self.workspace.setPlaceholderText(QtWidgets.QApplication.translate("Login", "workspace", None, -1))
+        self.accept.setText(QtWidgets.QApplication.translate("Login", "AGA", None, -1))
 
