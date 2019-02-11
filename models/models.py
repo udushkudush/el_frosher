@@ -3,8 +3,9 @@ from PySide2 import QtWidgets
 from PySide2.QtCore import QDir, Qt, QAbstractTableModel
 from PySide2.QtGui import QColor, QPixmap
 import logging
+import os
 log = logging.getLogger('elFrosher')
-from elFrosher.my_modules import config_frosher
+# from elFrosher.my_modules import config_frosher
 from os.path import normpath, join, dirname
 
 
@@ -14,20 +15,16 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         super(ServerTreeModel, self).__init__()
         self.setFilter(QDir.AllDirs | QDir.Files | QDir.NoDotAndDotDot)
         self._itemsdata = None
+        self.user = None
         self._root_project = None
         curentdir = dirname(__file__).split('models')[0]
         # normpath(join(curentdir, 'icons', ''))
-        self.server_root = config_frosher.SERVER.replace('\\', '/')
+
+        # self.server_root = config_frosher.SERVER.replace('\\', '/')
+        self.server_root = os.getenv('FROSH_SERVER').replace('\\', '/')
+
         self.folder_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_srv.png')))
         self.folder_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_folder_local.png')))
-        # self.file_server = QPixmap(normpath(join(curentdir, 'icons', 'ico_file_srv.png')))
-        # self.file_local = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
-        # self.file_lock = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
-        # self.file_lock_red = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
-        # self.ico01 = QPixmap(normpath(join(curentdir, 'icons', 'lock.png')))
-        # self.ico02 = QPixmap(normpath(join(curentdir, 'icons', 'lock_red.png')))
-        # self.ico03 = QPixmap(normpath(join(curentdir, 'icons', 'ico_file.png')))
-        # self.ico04 = QPixmap(normpath(join(curentdir, 'icons', 'file_checked.png')))
 
         self.ico_file_sync = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_sync.png')))
         self.ico_file_not_sync = QPixmap(normpath(join(curentdir, 'icons', 'icon_file_not_sync.png')))
@@ -46,6 +43,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
         _idx = self.setRootPath(path)
         log.info('setting path: {}'.format(path))
 
+    def set_user(self, user):
+        self.user = user
+        log.info('set user: {}'.format(self.user))
+
     def update(self, items_data, root_path):
         self.beginResetModel()
         # print(u'получил словарь >> ', items_data)
@@ -63,7 +64,6 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
             # делаем путь индекса относительным, меняем слеши на обратные как в БД
             item = normpath(_path).lower().replace(self._root_project, '').replace('\\', '/')
             db_path = self._itemsdata.get(item)
-            # print('item:\t\t{}\t\tdb_path:\t\t{}'.format(item, db_path))
             if _int.isDir():
                 for a in self._itemsdata.keys():
                     if item in a:
@@ -72,7 +72,6 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                         return self.file_sync
 
             # проверка что ключ есть в словаре, если нету, значит файл есть только на локале
-
             if db_path:
                 version, local_version, checkout, editor, _id = db_path
                 if version and not local_version:
@@ -83,10 +82,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                 elif version > local_version:
                     # print('версия устарела')
                     return self.file_old
-                elif checkout and editor == config_frosher.user:
+                elif checkout and editor == self.user:
                     print('файл в работе')
                     return self.file_in_work
-                elif checkout and editor != config_frosher.user:
+                elif checkout and editor != self.user:
                     return self.file_in_work_other
             else:
                 # print('файл или папка на локале но не синхронизирован')
@@ -121,10 +120,10 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                     elif version > local_version:
                         # print('версия устарела')
                         return self.ico_file_old.scaledToHeight(16, Qt.SmoothTransformation)
-                    elif checkout and editor == config_frosher.user:
+                    elif checkout and editor == self.user:
                         # print('файл в работе')
                         return self.ico_file_in_work.scaledToHeight(16, Qt.SmoothTransformation)
-                    elif checkout and editor != config_frosher.user:
+                    elif checkout and editor != self.user:
                         # print('файл в работе')
                         return self.ico_in_work_other.scaledToHeight(16, Qt.SmoothTransformation)
 
@@ -132,8 +131,6 @@ class ServerTreeModel(QtWidgets.QFileSystemModel):
                 #     return self.ico04.scaledToHeight(16, Qt.SmoothTransformation)
 
                 return self.ico_file_not_sync.scaledToHeight(16, Qt.SmoothTransformation)
-
-
         else:
             return super(ServerTreeModel, self).data(index, role)
 
@@ -300,3 +297,4 @@ class TableDetailsViewer(QAbstractTableModel):
         if orientation == Qt.Horizontal and role == Qt.DisplayRole:
             return self.header[section]
         return QAbstractTableModel.headerData(self, section, orientation, role)
+

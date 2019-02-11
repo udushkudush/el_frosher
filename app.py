@@ -16,11 +16,15 @@ import os
 import json
 from elFrosher.my_modules.el_logger import ElLogger
 
-tmp_log_path = r'C:\Users\Olga\Dropbox\inDaHouse\repo'
+# tmp_log_path = r'C:\Users\Olga\Dropbox\inDaHouse\repo'
+tmp_log_path = r'O:\Frosh\frosh_depot'
 log_file = normpath(join(tmp_log_path, 'log_{}.txt'.format('shshsh')))
 logger_name = 'elFrosher'
-elloger = ElLogger(logger_name, log_file)
+elloger = ElLogger()
+elloger.set_name(logger_name)
+elloger.set_log_file(log_file)
 log = elloger.log
+
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
@@ -35,51 +39,59 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
     def __init__(self, *args):
         super(SomeFuckingShit, self).__init__(*args)
         log.info('init my app...')
-
+        log.info('local setting init...')
         self.logon_ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
-        self.login = LoginDialog()
-        self.login.ticket = self.logon_ticket
-
-        log.info('local setting init')
+        self.local_settings = None
         self.fileslist = []
-        self.db = DatabaseWorker()
-        self.synchro = None
         self.table_model = ''
         self.table_details_model = ''
-        self.current_sender = None
-        self.ui = myFuckingWindow()
-        self.ui.setupUi(self)
-        self.local_settings = None
+        self.db = DatabaseWorker()
+
+        # проверка тикета, если нету то создать
+        self.check_ticket()
+        # раздаем основные пути
+        self.local_settings = self.read_local_settings()
+        self.project_root = self.local_settings.get('workspace').lower()
+        self.server_root = self.local_settings.get('server').lower()
+        os.environ['FROSH'] = self.local_settings.get('workspace')
+        log.info('local settings: {}'.format(self.local_settings))
+
+        from elFrosher.my_modules import config_frosher
+        import elFrosher.my_modules.synchro as synchro
+        reload(synchro)
+        from elFrosher.my_modules.synchro import Synchronizer
+        from elFrosher.my_modules.asset_creator import AssetCreator
+
+        # устанавливаем файл базы данных
+        self.db.set_data_base(join(split(self.local_settings.get('server'))[0], 'db', 'el_frosher.db'))
+        self.synchro = Synchronizer()
+        self.db.project_root = self.project_root
+
         self.ico_download = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow_down.png')))
         self.ico_check = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'check.png')))
         self.ico_increment = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'incremental.png')))
         self.ico_submit = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'arrow-up.png')))
         self.ico_folder = QtGui.QPixmap(normpath(join(self.__initial_folder, 'icons', 'folder.png')))
 
-        if not os.path.exists(self.logon_ticket):
-            log.info(self.logon_ticket)
-            # self.login.set_users(self.db.get_users())
-            self.login.show()
-        else:
-            self.show()
-            self.accept_logon()
-
-    def accept_logon(self):
-        self.local_settings = self.read_local_settings()
-        from elFrosher.my_modules import config_frosher
-
-        log.info('read local ticket: {}'.format(self.local_settings))
-        self.project_root = self.local_settings.get('workspace', 'SHIT')
-        os.environ['FROSH'] = self.local_settings.get('workspace', 'SHIT')
-
-        # self._DATABASE
-
-        self.server_root = config_frosher.SERVER
+        self.ui = myFuckingWindow()
+        self.ui.setupUi(self)
         self.buttons()
         self.setup_all_ui()
         self.set_main_style()
         self.setup_signals()
 
+        self.current_sender = None
+
+    def check_ticket(self):
+        if not os.path.exists(self.logon_ticket):
+            dial = LoginDialog()
+            if not dial.exec_():
+                sys.exit()
+            # self.local_settings = self.read_local_settings()
+            # log.debug('ticket created')
+            # os.environ['FROSH'] = self.local_settings.get('workspace')
+
+    def accept_logon(self):
         # ---- bookmarks defaults ---- #
         try:
             self.bookmarks = QtCore.QStringListModel()
@@ -91,8 +103,6 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
             bookmarks.append(i)
         self.bookmarks.setStringList(bookmarks)
         self.ui.bookmarks.setModel(self.bookmarks)
-        # переменныю для таблиц
-        # self.init_table()
 
     def read_local_settings(self):
         with open(self.logon_ticket, 'r') as f:
@@ -122,17 +132,10 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.ui.user_name.setText(self.local_settings.get('user_name'))
 
     def setup_all_ui(self):
-        import elFrosher.my_modules.synchro as synchro
         import elFrosher.models.models as models
         reload(models)
-        reload(synchro)
-        from elFrosher.my_modules.asset_creator import AssetCreator
-        from elFrosher.my_modules.synchro import Synchronizer
         from elFrosher.models.models import DataBaseViewer, ServerTreeModel, TableDetailsViewer
 
-        self.synchro = Synchronizer()
-
-        self.db.project_root = self.project_root
         # ---- DIALOGS ----- #
         self.submit_form = SubmitDialog(self)
         self.asset_form = CreateAssetDialog(self)
@@ -144,9 +147,11 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         # ---- TREE VIEW ----- #
         self.directory = ServerTreeModel()
+        self.directory.set_user(self.local_settings.get('user_name'))
         self.directory.setpath(self.project_root)
         self.server = ServerTreeModel()
         self.server.setpath(self.server_root)
+        self.server.set_user(self.local_settings.get('user_name'))
 
         self.updater_tree_model(self.directory, self.project_root)
         # ----- set project dir in tree view ----- #
@@ -558,35 +563,37 @@ class LoginDialog(QtWidgets.QDialog):
         self.dialog.setupUi(self)
         self.ui = self.dialog
         self.ui.accept.clicked.connect(self.create_xui)
-        # self.ui.server.textChanged.connect(self.connect_to_server)
         self.ui.srv_connect.clicked.connect(self.connect_to_server)
-        self.ticket = None
+        self.ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
         self.users = []
-        self.mainApp = SomeFuckingShit()
         try:
             text = os.getenv('FROSH_SERVER')
             self.ui.server.setText(text)
         except Exception as e:
             log.debug('env FROSH_SERVER not exists : exception - {}'.format(e))
 
-        # создаем комплитер
-        # completer = QtWidgets.QCompleter()
-
-        # создает стринговую модель
         try:
             self.model = QtCore.QStringListModel()
         except AttributeError:
             self.model = QtGui.QStringListModel()
+
         self.ui.user.setModel(self.model)
-        # соединяем стринг модель с комплитером
-        # completer.setModel(self.model)
 
     def connect_to_server(self):
         os.environ['FROSH_SERVER'] = self.ui.server.text().lower()
         _srv = os.getenv('FROSH_SERVER')
-        self.mainApp._DATABASE = join(split(_srv)[0], 'db', 'el_frosher.db')
-        self.mainApp.db.set_data_base(join(split(_srv)[0], 'db', 'el_frosher.db'))
-        self.set_users(self.mainApp.db.get_users())
+        db = DatabaseWorker()
+        db.set_data_base(join(split(_srv)[0], 'db', 'el_frosher.db'))
+        self.set_users(db.get_users())
+
+    def set_users(self, users):
+        x = [x[0] for x in users]
+        # кидаем в переменную всех юзеров
+        self.users = x
+        # закидываем список в стринг модель
+        self.model.setStringList(self.users)
+        self.ui.user.setCurrentIndex(0)
+        log.info(x)
 
     def create_xui(self):
         log.info('creating ticket...')
@@ -597,19 +604,8 @@ class LoginDialog(QtWidgets.QDialog):
 
         with open(self.ticket, 'w') as f:
             json.dump(fuck, f, sort_keys=True, indent=4, ensure_ascii=False)
-        log.info(self.ticket)
-        self.hide()
-        win = SomeFuckingShit()
-        win.accept_logon()
-        win.show()
-
-    def set_users(self, users):
-        x = [x[0] for x in users]
-        # кидаем в переменную всех юзеров
-        self.users = x
-        # закидываем список в стринг модель
-        self.model.setStringList(self.users)
-        log.info(x)
+        log.info('shit shit: {}'.format(self.ticket))
+        self.accept()
 
 
 class MyProgressBar(QtWidgets.QWidget):
@@ -646,4 +642,5 @@ class MyProgressBar(QtWidgets.QWidget):
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
     win = SomeFuckingShit()
+    win.show()
     sys.exit(app.exec_())

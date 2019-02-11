@@ -10,7 +10,7 @@ SERVER = getenv('FROSH_SERVER').lower()
 # SERVER = r'O:\Frosh\frosh_depot\project_files'.lower()
 
 VERSIONS = join(split(SERVER)[0].lower(), 'versions')
-# DB_FILE = join(split(SERVER)[0], 'db', 'el_frosher.db')
+DB_FILE = join(split(SERVER)[0], 'db', 'el_frosher.db')
 ASSETS_ROOT = normpath(join(PROJECT, 'assets'))
 CHARACTERS = normpath(join(ASSETS_ROOT, 'chars'))
 PROPS = normpath(join(ASSETS_ROOT, 'obj'))

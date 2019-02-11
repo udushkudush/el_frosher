@@ -24,9 +24,10 @@ class Synchronizer(object):
             os.makedirs(self.server_root)
 
     def setup_pathes(self):
-        self.server_root = os.getenv('FROSH_SERVER')
-        self.project_root = os.getenv('FROSH')
-        self.versions = normpath(join(split(self.server_root)[0].lower(), 'versions'))
+        self.server_root = os.getenv('FROSH_SERVER').lower()
+        self.project_root = os.getenv('FROSH').lower()
+        # log.info('project root - {} : server root - {}'.format(self.project_root, self.server_root))
+        self.versions = normpath(join(split(self.server_root)[0], 'versions'))
         self.make_server_repoitory()
 
     def splitter(self, this_file):

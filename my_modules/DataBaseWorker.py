@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 import sqlite3
-from elFrosher.my_modules.synchro import Synchronizer
-from os.path import normpath
 import logging
 log = logging.getLogger('elFrosher')
 
@@ -9,12 +7,18 @@ log = logging.getLogger('elFrosher')
 class DatabaseWorker:
     def __init__(self):
         self.db_file = None
-        self.synchro = Synchronizer()
+        self.synchro = None
         self.project_root = None
-        log.info('DatabaseWorker init... {}'.format(self.db_file))
+        log.info('Primary DatabaseWorker init... {}'.format(self.db_file))
 
     def set_data_base(self, db_file):
         self.db_file = db_file
+        # import synchronizer
+        self.set_synchronizer()
+
+    def set_synchronizer(self):
+        from elFrosher.my_modules.synchro import Synchronizer
+        self.synchro = Synchronizer()
 
     def get_users(self):
         text = "SELECT login FROM users"

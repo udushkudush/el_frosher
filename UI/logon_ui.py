@@ -60,5 +60,6 @@ class Ui_Login(object):
         self.server.setPlaceholderText(QtWidgets.QApplication.translate("Login", "enter server path", None, -1))
         self.srv_connect.setText(QtWidgets.QApplication.translate("Login", "cnct", None, -1))
         self.workspace.setPlaceholderText(QtWidgets.QApplication.translate("Login", "workspace", None, -1))
+        self.password.setPlaceholderText(QtWidgets.QApplication.translate("Login", "enter password", None, -1))
         self.accept.setText(QtWidgets.QApplication.translate("Login", "AGA", None, -1))
 
