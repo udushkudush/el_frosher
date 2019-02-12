@@ -5,7 +5,12 @@ from elFrosher.UI.submit_form import Ui_submit_dialog as submit_dialog
 from elFrosher.UI.create_asset_form import Ui_Form as create_asset_dialog
 from elFrosher.UI.logon_ui import Ui_Login as login_dialog
 
-reload = getattr(__import__('importlib'), 'reload', 'reload')
+# reload = getattr(__import__('importlib'), 'reload', reload)
+try:
+    from importlib import reload as reload
+except ImportError:
+    reload = reload
+
 import elFrosher.my_modules.DataBaseWorker as DB_Worker
 reload(DB_Worker)
 from elFrosher.my_modules.DataBaseWorker import DatabaseWorker
@@ -16,15 +21,12 @@ import os
 import json
 from elFrosher.my_modules.el_logger import ElLogger
 
-# tmp_log_path = r'C:\Users\Olga\Dropbox\inDaHouse\repo'
-tmp_log_path = r'O:\Frosh\frosh_depot'
-log_file = normpath(join(tmp_log_path, 'log_{}.txt'.format('shshsh')))
-logger_name = 'elFrosher'
+frosh_depot = r'O:\Frosh\frosh_depot'
+log_file = normpath(join(frosh_depot, 'log_{}.txt'.format(split(os.getenv('userprofile')[-1]))))
 elloger = ElLogger()
-elloger.set_name(logger_name)
+elloger.set_name('elFrosher')
 elloger.set_log_file(log_file)
 log = elloger.log
-
 
 
 class SomeFuckingShit(QtWidgets.QMainWindow):
@@ -54,6 +56,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         self.project_root = self.local_settings.get('workspace').lower()
         self.server_root = self.local_settings.get('server').lower()
         os.environ['FROSH'] = self.local_settings.get('workspace')
+        os.environ['FROSH_SERVER'] = self.local_settings.get('server')
         log.info('local settings: {}'.format(self.local_settings))
 
         from elFrosher.my_modules import config_frosher
@@ -64,6 +67,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
 
         # устанавливаем файл базы данных
         self.db.set_data_base(join(split(self.local_settings.get('server'))[0], 'db', 'el_frosher.db'))
+        self.db.set_synchronizer()
         self.synchro = Synchronizer()
         self.db.project_root = self.project_root
 
@@ -566,11 +570,14 @@ class LoginDialog(QtWidgets.QDialog):
         self.ui.srv_connect.clicked.connect(self.connect_to_server)
         self.ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
         self.users = []
-        try:
-            text = os.getenv('FROSH_SERVER')
-            self.ui.server.setText(text)
-        except Exception as e:
-            log.debug('env FROSH_SERVER not exists : exception - {}'.format(e))
+        _srv = os.getenv('FROSH_SERVER')
+        if _srv:
+            self.ui.server.setText(_srv)
+        else:
+            os.environ['FROSH_SERVER'] = r'o:\frosh\frosh_depot\project_files'
+            _srv = os.getenv('FROSH_SERVER')
+            self.ui.server.setText(_srv)
+            log.debug('env FROSH_SERVER not exists, create it - {}'.format(_srv))
 
         try:
             self.model = QtCore.QStringListModel()
@@ -580,8 +587,10 @@ class LoginDialog(QtWidgets.QDialog):
         self.ui.user.setModel(self.model)
 
     def connect_to_server(self):
-        os.environ['FROSH_SERVER'] = self.ui.server.text().lower()
+        xx = self.ui.server.text().lower()
+        os.environ['FROSH_SERVER'] = xx
         _srv = os.getenv('FROSH_SERVER')
+        log.info('srv - {} :: _srv - {}'.format(xx, _srv))
         db = DatabaseWorker()
         db.set_data_base(join(split(_srv)[0], 'db', 'el_frosher.db'))
         self.set_users(db.get_users())

@@ -1,4 +1,6 @@
 import logging
+from os.path import exists, normpath, join, split
+from os import getenv
 
 
 class ElLogger(object):
@@ -14,7 +16,11 @@ class ElLogger(object):
         self.log.setLevel(logging.DEBUG)
 
     def set_log_file(self, file):
-        self.file = file
+        if exists(file):
+            self.file = file
+        else:
+            _pth, name = split(getenv('userprofile'))
+            self.file = normpath(join(_pth, name, 'Documents', 'maya', 'log_{}.txt'.format(name)))
         fh = logging.FileHandler(self.file, mode='w', encoding='utf-8')
         x = u'%(levelname)-8s | %(lineno)-3d | %(module)-18s | %(funcName)s | [%(asctime)s] | %(message)s'
         formatter = logging.Formatter(x)

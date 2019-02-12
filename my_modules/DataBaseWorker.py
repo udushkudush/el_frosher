@@ -9,12 +9,11 @@ class DatabaseWorker:
         self.db_file = None
         self.synchro = None
         self.project_root = None
-        log.info('Primary DatabaseWorker init... {}'.format(self.db_file))
 
     def set_data_base(self, db_file):
         self.db_file = db_file
-        # import synchronizer
-        self.set_synchronizer()
+        log.info('Primary DatabaseWorker init... {}'.format(self.db_file))
+        # self.set_synchronizer()
 
     def set_synchronizer(self):
         from elFrosher.my_modules.synchro import Synchronizer
@@ -190,39 +189,39 @@ VALUES ((select id from users where login='{}'), (SELECT assets.id FROM assets W
         log.info('UPDATE LOCAL VERSION')
 
     def multiple_assets_records(self, assetlist, author, status=1, comment=None):
-            """ создаем общий пендинл лист для выбранных ассетов """
-            # author = self.get_author(author)
+        """ создаем общий пендинл лист для выбранных ассетов """
+        # author = self.get_author(author)
 
-            " завернуть номер пендинг листа в запрос "
-            pending = "SELECT MAX(pending.id) FROM pending"
-            pending_list = self.read_data(pending)[0] or None
-            if not pending_list:
-                pending_list = 1
-            else:
-                pending_list += 1
+        " завернуть номер пендинг листа в запрос "
+        pending = "SELECT MAX(pending.id) FROM pending"
+        pending_list = self.read_data(pending)[0] or None
+        if not pending_list:
+            pending_list = 1
+        else:
+            pending_list += 1
 
-            if not comment:
-                comment = 'no comment'
-            else:
-                # comment = comment.decode('utf-8')
-                print('comment nodecode: {}'.format(comment))
-                # print('comment decode: {}'.format(comment.encode('cp1251')))
+        if not comment:
+            comment = 'no comment'
+        else:
+            # comment = comment.decode('utf-8')
+            print('comment nodecode: {}'.format(comment))
+            # print('comment decode: {}'.format(comment.encode('cp1251')))
 
-            ''' теперь надо обработать список выделеных файлов '''
-            'сначала добавляем список файлов по таблицам asset и pending'
-            skipped_files = []
-            for file in assetlist:
-                asset_id, srv_path, version, local_version, checkout, editor = '', '', '', '', '', ''
+        ''' теперь надо обработать список выделеных файлов '''
+        'сначала добавляем список файлов по таблицам asset и pending'
+        skipped_files = []
+        for file in assetlist:
+            asset_id, srv_path, version, local_version, checkout, editor = '', '', '', '', '', ''
 
-                # проверка есть ли запись об ассете в базе, если есть то обновляется версия,
-                # если записи нет,  тогда добавляем ее
-                __, name, filepath = self.synchro.splitter(file)
+            # проверка есть ли запись об ассете в базе, если есть то обновляется версия,
+            # если записи нет,  тогда добавляем ее
+            __, name, filepath = self.synchro.splitter(file)
 
-                # конвертация в виндовых слешей, пусть в базе хранятся с обратными слешами
-                filepath = filepath.replace('\\', '/')
+            # конвертация в виндовых слешей, пусть в базе хранятся с обратными слешами
+            filepath = filepath.replace('\\', '/')
 
-                # формируем запрос для проверки
-                text = """SELECT id, file, version,
+            # формируем запрос для проверки
+            text = """SELECT id, file, version,
 (SELECT version FROM local_version
 WHERE user_id=(select id from users where login='{user}')
 AND asset_id = assets.id) as local_ver,
@@ -230,132 +229,132 @@ AND asset_id = assets.id) as local_ver,
 (select users.login from users where users.id = (
 SELECT user_id FROM checkout WHERE checkout.asset_id = assets.id)) as editor
 FROM assets WHERE file = '{file}'""".format(user=author, file=filepath)
-                result = self.read_data(text)
+            result = self.read_data(text)
 
-                # распаковываем результат по переменным, result вернет None если в БД нет записи об ассете
-                if result:
-                    asset_id, srv_path, version, local_version, checkout, editor = result
-                # print('id: {}\tfile: {}\tver: {} local: {}\t\tcheckout: {} editor:{} receiver: {}'.format(
-                #     asset_id, srv_path, version, local_version, checkout, editor, author))
+            # распаковываем результат по переменным, result вернет None если в БД нет записи об ассете
+            if result:
+                asset_id, srv_path, version, local_version, checkout, editor = result
+            # print('id: {}\tfile: {}\tver: {} local: {}\t\tcheckout: {} editor:{} receiver: {}'.format(
+            #     asset_id, srv_path, version, local_version, checkout, editor, author))
 
-                # если есть ID, значит файл уже проведен в базе
-                if asset_id:
-                    # тогда сверяем версии, и далее проверяем не висит ли на нем статус в работе'
-                    if local_version != version:
-                        # если версии не совпадают файл пропускаем
-                        skipped_files.append('skipped>> local_version != version: {}'.format(filepath))
-                        # log.info('skipped>> local_version != version: {}'.format(filepath))
-                        # print(u'пропуск: >> \t', filepath)
-                        continue
-                    elif checkout and editor != author:
-                        # если висит статус чекаут, сверяемся совпадают ли автор запроса и редактор, при несовпадении
-                        # - пропускаем файл и меняем статус с 1 на None
-                        # print('file: {} checkout: {}\teditor: {}\tauthor: {}'.format(srv_path, checkout, editor, author))
-                        # status = None
-                        skipped_files.append('skipped>> checkout and editor != author: {}'.format(filepath))
-                        # log.info('skipped>> checkout and editor != author: {}'.format(filepath))
-                        continue
-                    elif checkout and editor == author:
-                        # редактор и автор запроса совпадают, при сабмите снимаем статус checkout
-                        status = 1
-                        log.info('checkout detect, editor : {} | author : {}, switch status on : {}'.format(
-                            editor, author, status))
-                        # print(u'checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
+            # если есть ID, значит файл уже проведен в базе
+            if asset_id:
+                # тогда сверяем версии, и далее проверяем не висит ли на нем статус в работе'
+                if local_version != version:
+                    # если версии не совпадают файл пропускаем
+                    skipped_files.append('skipped>> local_version != version: {}'.format(filepath))
+                    # log.info('skipped>> local_version != version: {}'.format(filepath))
+                    # print(u'пропуск: >> \t', filepath)
+                    continue
+                elif checkout and editor != author:
+                    # если висит статус чекаут, сверяемся совпадают ли автор запроса и редактор, при несовпадении
+                    # - пропускаем файл и меняем статус с 1 на None
+                    # print('file: {} checkout: {}\teditor: {}\tauthor: {}'.format(srv_path, checkout, editor, author))
+                    # status = None
+                    skipped_files.append('skipped>> checkout and editor != author: {}'.format(filepath))
+                    # log.info('skipped>> checkout and editor != author: {}'.format(filepath))
+                    continue
+                elif checkout and editor == author:
+                    # редактор и автор запроса совпадают, при сабмите снимаем статус checkout
+                    status = 1
+                    log.info('checkout detect, editor : {} | author : {}, switch status on : {}'.format(
+                        editor, author, status))
+                    # print(u'checkout детектед, редактор : {}, автор : {}, ставим статус на {}'.format(editor, author, status))
 
-                    # файл прошел все проверки и уже есть запись в базе, добавляем 1 к номеру версии
-                    version = int(version) + 1
-                    text = """UPDATE assets SET version='{}' WHERE assets.id = '{}'""".format(version, asset_id)
-                    self.write_data(text)
+                # файл прошел все проверки и уже есть запись в базе, добавляем 1 к номеру версии
+                version = int(version) + 1
+                text = """UPDATE assets SET version='{}' WHERE assets.id = '{}'""".format(version, asset_id)
+                self.write_data(text)
 
-                    # заливаем файло на сервак, вписываем итерируемый объект, с локальным путем, так как
-                    # synchro определяет направление копирования исходя из поданого пути
-                    log.info(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
-                    # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
-                    self.synchro.sync_file(file, version)
-                    # print(text)
+                # заливаем файло на сервак, вписываем итерируемый объект, с локальным путем, так как
+                # synchro определяет направление копирования исходя из поданого пути
+                log.info(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                self.synchro.sync_file(file, version)
+                # print(text)
 
-                    # и сразу заносим в пендинг лист
-                    text = """INSERT INTO pending (id, asset_id, version)
+                # и сразу заносим в пендинг лист
+                text = """INSERT INTO pending (id, asset_id, version)
                     VALUES ('{}','{}','{}')""".format(pending_list, asset_id, version)
+                self.write_data(text)
+                # print(text)
+
+                # заводим статус в чекаут
+                if status == 4:
+                    text = "INSERT INTO checkout (asset_id, status_id, user_id ) VALUES ('{}','{}','{}')".format(
+                        asset_id, status, author['id'])
                     self.write_data(text)
                     # print(text)
-
-                    # заводим статус в чекаут
-                    if status == 4:
-                        text = "INSERT INTO checkout (asset_id, status_id, user_id ) VALUES ('{}','{}','{}')".format(
-                            asset_id, status, author['id'])
-                        self.write_data(text)
-                        # print(text)
-                    elif status == 1:
-                        text = """DELETE FROM checkout WHERE asset_id = '{}' AND user_id = (SELECT users.id FROM users
+                elif status == 1:
+                    text = """DELETE FROM checkout WHERE asset_id = '{}' AND user_id = (SELECT users.id FROM users
                         WHERE login = '{}')""".format(asset_id, author)
-                        self.write_data(text)
+                    self.write_data(text)
 
-                    # прописываем в журнал номер локальной версии
-                    text = """INSERT OR REPLACE INTO local_version (user_id, asset_id, version)
+                # прописываем в журнал номер локальной версии
+                text = """INSERT OR REPLACE INTO local_version (user_id, asset_id, version)
                         VALUES ((SELECT user_id FROM local_version WHERE user_id = (
                         SELECT id FROM users WHERE users.login = '{}')),
                         (SELECT asset_id FROM local_version WHERE asset_id = '{}'), '{}')""".format(
-                            author, asset_id, version)
-                    # print(text, '\n\n')
-                    self.write_data(text)
-
-                else:
-                    # asset_id = None, значит записи в БД нет, добавляем запись в таблицу ассетов, версия - 1
-                    print(u'\rновая запись\n\n\r')
-                    version = 1
-                    text = """INSERT INTO assets (file, name, version) VALUES ('{}', '{}', '{}')""".format(
-                        filepath, name, version)
-                    # print(text)
-                    self.write_data(text)
-
-                    # todo надо объединить запись нового ассета в один запрос
-                    # теперь забираем его айдишник
-                    text = "SELECT assets.id FROM assets WHERE file = '{}'".format(filepath)
-                    asset_id = self.read_data(text)[0]
-                    'добавляем этот файл в тот же пендинг лист'
-                    text = "INSERT INTO pending (id, asset_id, version) VALUES ('{}','{}','{}')".format(
-                        pending_list, asset_id, version)
-                    # print(text)
-                    self.write_data(text)
-
-                    # заливаем файло на сервак
-                    log.info('copy to server: {}\t- version: {}'.format(file, version))
-                    # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
-                    self.synchro.sync_file(file, version)
-
-                    # заводим статус в чекаут
-                    if status == 4:
-                        text = """INSERT INTO checkout (asset_id, status_id, user_id )
-                        VALUES ('{}','{}','{}')""".format(asset_id, status, author)
-                        self.write_data(text)
-                        # print(text)
-                    # делаем запись в таблице учета локальных версий
-                    text = """INSERT INTO local_version (user_id, asset_id, version)
-                    VALUES ((SELECT id FROM users WHERE login= '{}'), '{}', '{}')""".format(
-                        author, asset_id, version)
-                    self.write_data(text)
-                    # print(text, '\n\n')
-            # теперь добавляем запись в таблицу info
-            # todo если файл в списке один и он пропущен то пендинг создается, надо разрулить этот момент
-            if skipped_files:
-                if len(assetlist) == len(skipped_files):
-                    log.info('нет добавляемых файлов')
-                    # print(u'нет добавляемых файлов')
-            else:
-                text = """INSERT INTO info (pending_id, author_id, comment, date)
-VALUES ('{}', (SELECT id FROM users WHERE login= '{}'), '{}', datetime("now", "localtime"))""".format(
-                    pending_list, author, comment)
-                log.info(text)
+                    author, asset_id, version)
+                # print(text, '\n\n')
                 self.write_data(text)
 
-            # выводим список пропущенных файлов
-            if skipped_files:
-                log.info('пропущенные файлы:\n\n\n')
-                # print(u'\n\n\nпропущенные файлы: ')
-                for s in skipped_files:
-                    log.info(s)
-                    # print('skip: > {}'.format(s))
+            else:
+                # asset_id = None, значит записи в БД нет, добавляем запись в таблицу ассетов, версия - 1
+                print(u'\rновая запись\n\n\r')
+                version = 1
+                text = """INSERT INTO assets (file, name, version) VALUES ('{}', '{}', '{}')""".format(
+                    filepath, name, version)
+                # print(text)
+                self.write_data(text)
+
+                # todo надо объединить запись нового ассета в один запрос
+                # теперь забираем его айдишник
+                text = "SELECT assets.id FROM assets WHERE file = '{}'".format(filepath)
+                asset_id = self.read_data(text)[0]
+                'добавляем этот файл в тот же пендинг лист'
+                text = "INSERT INTO pending (id, asset_id, version) VALUES ('{}','{}','{}')".format(
+                    pending_list, asset_id, version)
+                # print(text)
+                self.write_data(text)
+
+                # заливаем файло на сервак
+                log.info('copy to server: {}\t- version: {}'.format(file, version))
+                # print(u'заливаем файло на сервак:\n\rfile: {}\tversion: {}'.format(file, version))
+                self.synchro.sync_file(file, version)
+
+                # заводим статус в чекаут
+                if status == 4:
+                    text = """INSERT INTO checkout (asset_id, status_id, user_id )
+                        VALUES ('{}','{}','{}')""".format(asset_id, status, author)
+                    self.write_data(text)
+                    # print(text)
+                # делаем запись в таблице учета локальных версий
+                text = """INSERT INTO local_version (user_id, asset_id, version)
+                    VALUES ((SELECT id FROM users WHERE login= '{}'), '{}', '{}')""".format(
+                    author, asset_id, version)
+                self.write_data(text)
+                # print(text, '\n\n')
+        # теперь добавляем запись в таблицу info
+        # todo если файл в списке один и он пропущен то пендинг создается, надо разрулить этот момент
+        if skipped_files:
+            if len(assetlist) == len(skipped_files):
+                log.info('нет добавляемых файлов')
+                # print(u'нет добавляемых файлов')
+        else:
+            text = """INSERT INTO info (pending_id, author_id, comment, date)
+VALUES ('{}', (SELECT id FROM users WHERE login= '{}'), '{}', datetime("now", "localtime"))""".format(
+                pending_list, author, comment)
+            log.info(text)
+            self.write_data(text)
+
+        # выводим список пропущенных файлов
+        if skipped_files:
+            log.info('пропущенные файлы:\n\n\n')
+            # print(u'\n\n\nпропущенные файлы: ')
+            for s in skipped_files:
+                log.info(s)
+                # print('skip: > {}'.format(s))
 
     def create_tables(self):
         # функция быстро создает все нужные таблицы со связями
