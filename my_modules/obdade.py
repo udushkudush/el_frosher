@@ -69,5 +69,5 @@ def obdade_on_lokalikus():
 
 
 # obdade_on_tuchkus()
-# copy_icons(el_lokalikus, el_tuchkus)
 obdade_on_lokalikus()
+# copy_icons(el_lokalikus, el_tuchkus)

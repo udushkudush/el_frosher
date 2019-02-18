@@ -29,7 +29,7 @@ elloger.set_log_file(log_file)
 log = elloger.log
 
 
-class SomeFuckingShit(QtWidgets.QMainWindow):
+class FrosherFileManager(QtWidgets.QMainWindow):
     __initial_folder = dirname(__file__)
     _DATABASE = None
     asset_form, submit_form = '', ''
@@ -39,7 +39,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
     versions = None
 
     def __init__(self, *args):
-        super(SomeFuckingShit, self).__init__(*args)
+        super(FrosherFileManager, self).__init__(*args)
         log.info('init my app...')
         log.info('local setting init...')
         self.logon_ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
@@ -270,7 +270,7 @@ class SomeFuckingShit(QtWidgets.QMainWindow):
         data = self.db.read_data(data, single=False)
         # очищаем список от дублирующих записей и сортируем по номеру пенд листа
         data = sorted(list(set(data)), key=lambda k: k[0])
-        header = ['list', 'comment', 'author', 'data']
+        header = ['list', 'comment', 'author', 'date']
         return data, header
 
     def update_table_model(self, sender):
@@ -566,6 +566,9 @@ class LoginDialog(QtWidgets.QDialog):
         self.dialog = login_dialog()
         self.dialog.setupUi(self)
         self.ui = self.dialog
+        self.setWindowTitle('Login')
+        self.ui.srv_connect.setText('connect')
+        self.ui.accept.setText('GO')
         self.ui.accept.clicked.connect(self.create_xui)
         self.ui.srv_connect.clicked.connect(self.connect_to_server)
         self.ticket = normpath(join(os.getenv('userprofile'), 'Documents', 'maya', 'el_frosher.json'))
@@ -650,6 +653,6 @@ class MyProgressBar(QtWidgets.QWidget):
 
 if __name__ == '__main__':
     app = QtWidgets.QApplication(sys.argv)
-    win = SomeFuckingShit()
+    win = FrosherFileManager()
     win.show()
     sys.exit(app.exec_())
